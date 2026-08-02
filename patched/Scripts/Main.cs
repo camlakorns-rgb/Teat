@@ -21,7 +21,7 @@ public partial class Main : Node2D
             if (_lastTouchPos != Vector2I.Zero)
                 return _lastTouchPos;
         }
-        return MobileMousePos();
+        return DisplayServer.MouseGetPosition();
     }
 
     public override void _Input(InputEvent @event)
@@ -61,1591 +61,1654 @@ public partial class Main : Node2D
         base._Input(@event);
     }
 
-	[Signal]
-	public delegate void ReachedTargetEventHandler();
+    [Signal]
+    public delegate void ReachedTargetEventHandler();
 
-	public enum ItemTargetMode
-	{
-		UNTYPED,
-		RANDOM,
-		CLOSEST,
-		FARTHEST
-	}
+    public enum ItemTargetMode
+    {
+        UNTYPED,
+        RANDOM,
+        CLOSEST,
+        FARTHEST
+    }
 
-	
+    
 
-	
+    
 
-	
+    
 
-	public Window mainWindow;
+    public Window mainWindow;
 
-	[Export(PropertyHint.None, "")]
-	public Character mainCharacter;
+    [Export(PropertyHint.None, "")]
+    public Character mainCharacter;
 
-	[Export(PropertyHint.None, "")]
-	public SaveHandler saveHandler;
+    [Export(PropertyHint.None, "")]
+    public SaveHandler saveHandler;
 
-	[ExportGroup("Item Spawner Logic", "")]
-	public Array<ItemWindow> spawnedItems = new Array<ItemWindow>();
+    [ExportGroup("Item Spawner Logic", "")]
+    public Array<ItemWindow> spawnedItems = new Array<ItemWindow>();
 
-	[Export(PropertyHint.None, "")]
-	public int maxItems = 10;
+    [Export(PropertyHint.None, "")]
+    public int maxItems = 10;
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 spawnMargin = new Vector2(256f, 128f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 spawnMargin = new Vector2(256f, 128f);
 
-	[Export(PropertyHint.None, "")]
-	public Timer spawnerTimer;
+    [Export(PropertyHint.None, "")]
+    public Timer spawnerTimer;
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 spawnerTimeRange = new Vector2(30f, 120f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 spawnerTimeRange = new Vector2(30f, 120f);
 
-	[ExportSubgroup("Attachment Logic", "")]
-	public Array<AttachObjWindow> spawnedAttachments = new Array<AttachObjWindow>();
+    [ExportSubgroup("Attachment Logic", "")]
+    public Array<AttachObjWindow> spawnedAttachments = new Array<AttachObjWindow>();
 
-	[ExportSubgroup("Dialogue Logic", "")]
-	public Array<DialogueDataRes> dialogueStack = new Array<DialogueDataRes>();
+    [ExportSubgroup("Dialogue Logic", "")]
+    public Array<DialogueDataRes> dialogueStack = new Array<DialogueDataRes>();
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 timeBetweenStacks = new Vector2(0.5f, 1.5f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 timeBetweenStacks = new Vector2(0.5f, 1.5f);
 
-	[Export(PropertyHint.None, "")]
-	public AttachDataRes defaultTextDataRes;
+    [Export(PropertyHint.None, "")]
+    public AttachDataRes defaultTextDataRes;
 
-	[Export(PropertyHint.None, "")]
-	public Timer randomDialogueTimer;
+    [Export(PropertyHint.None, "")]
+    public Timer randomDialogueTimer;
 
-	[ExportGroup("Actor Spawner Logic", "")]
-	public Array<ActorWindow> spawnedActors = new Array<ActorWindow>();
+    [ExportGroup("Actor Spawner Logic", "")]
+    public Array<ActorWindow> spawnedActors = new Array<ActorWindow>();
 
-	public Array<ActorWindow> spawnedCompanions = new Array<ActorWindow>();
+    public Array<ActorWindow> spawnedCompanions = new Array<ActorWindow>();
 
-	[Export(PropertyHint.None, "")]
-	public int companionLimit = 3;
+    [Export(PropertyHint.None, "")]
+    public int companionLimit = 3;
 
-	[Export(PropertyHint.None, "")]
-	public Timer spawnerActorTimer;
+    [Export(PropertyHint.None, "")]
+    public Timer spawnerActorTimer;
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 spawnerActorTimerRange = new Vector2(300f, 600f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 spawnerActorTimerRange = new Vector2(300f, 600f);
 
-	[ExportGroup("Random Animation Logic", "")]
-	[Export(PropertyHint.None, "")]
-	public Timer randomAnimationTimer;
+    [ExportGroup("Random Animation Logic", "")]
+    [Export(PropertyHint.None, "")]
+    public Timer randomAnimationTimer;
 
-	[ExportGroup("Passive Play Logic", "")]
-	[Export(PropertyHint.None, "")]
-	public Timer passivePlayTimer;
+    [ExportGroup("Passive Play Logic", "")]
+    [Export(PropertyHint.None, "")]
+    public Timer passivePlayTimer;
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 passivePlayTimerOffRange = new Vector2(60f, 120f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 passivePlayTimerOffRange = new Vector2(60f, 120f);
 
-	[Export(PropertyHint.None, "")]
-	public Vector2 passivePlayTimerOnRange = new Vector2(15f, 30f);
+    [Export(PropertyHint.None, "")]
+    public Vector2 passivePlayTimerOnRange = new Vector2(15f, 30f);
 
-	[ExportGroup("Reaction Dialogue Chances", "")]
-	[Export(PropertyHint.None, "")]
-	public float throwSoftReactionChance = 5f;
+    [ExportGroup("Reaction Dialogue Chances", "")]
+    [Export(PropertyHint.None, "")]
+    public float throwSoftReactionChance = 5f;
 
-	[Export(PropertyHint.None, "")]
-	public float throwHardReactionChance = 20f;
+    [Export(PropertyHint.None, "")]
+    public float throwHardReactionChance = 20f;
 
-	[Export(PropertyHint.None, "")]
-	public float landSoftReactionChance = 5f;
+    [Export(PropertyHint.None, "")]
+    public float landSoftReactionChance = 5f;
 
-	[Export(PropertyHint.None, "")]
-	public float landHardReactionChance = 20f;
+    [Export(PropertyHint.None, "")]
+    public float landHardReactionChance = 20f;
 
-	[ExportGroup("Reference UIDs", "")]
-	[Export(PropertyHint.None, "")]
-	public PackedScene ItemObjectScene;
+    [ExportGroup("Reference UIDs", "")]
+    [Export(PropertyHint.None, "")]
+    public PackedScene ItemObjectScene;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene AttachmentObjectScene;
+    [Export(PropertyHint.None, "")]
+    public PackedScene AttachmentObjectScene;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene actorScene;
+    [Export(PropertyHint.None, "")]
+    public PackedScene actorScene;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene pauseMenu;
+    [Export(PropertyHint.None, "")]
+    public PackedScene pauseMenu;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene terminalMenu;
+    [Export(PropertyHint.None, "")]
+    public PackedScene terminalMenu;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene confirmationMenu;
+    [Export(PropertyHint.None, "")]
+    public PackedScene confirmationMenu;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene eulaMenu;
+    [Export(PropertyHint.None, "")]
+    public PackedScene eulaMenu;
 
-	[Export(PropertyHint.None, "")]
-	public PackedScene magnifierScene;
+    [Export(PropertyHint.None, "")]
+    public PackedScene magnifierScene;
 
-	[ExportGroup("Internal Settings", "")]
-	[Export(PropertyHint.None, "")]
-	public bool settingWindowThrowPhysics = true;
+    [ExportGroup("Internal Settings", "")]
+    [Export(PropertyHint.None, "")]
+    public bool settingWindowThrowPhysics = true;
 
-	public bool settingEULA;
+    public bool settingEULA;
 
-	public float settingSpriteScaler = 1f;
+    public float settingSpriteScaler = 1f;
 
-	public float settingItemScaler = 1f;
+    public float settingItemScaler = 1f;
 
-	public float settingUIScaler = 1f;
+    public float settingUIScaler = 1f;
 
-	public bool settingSpawnItems = true;
+    public bool settingSpawnItems = true;
 
-	public bool settingSpawnActors = true;
+    public bool settingSpawnActors = true;
 
-	public bool settingPassivePlayMode;
+    public bool settingPassivePlayMode;
 
-	public bool settingRemovePopups;
+    public bool settingRemovePopups;
 
-	public bool settingRemoveConvos;
+    public bool settingRemoveConvos;
 
-	public bool settingAudioOn = true;
+    public bool settingAudioOn = true;
 
-	public bool settingMods;
+    public bool settingMods;
 
-	public Array<string> settingEnabledMods = new Array<string>();
+    public Array<string> settingEnabledMods = new Array<string>();
 
-	public string userInfoName = "USER";
+    public string userInfoName = "USER";
 
-	public Godot.Collections.Dictionary<SaveHandler.SeenObjectTypes, Array<string>> SeenObjects = new Godot.Collections.Dictionary<SaveHandler.SeenObjectTypes, Array<string>>
-	{
-		{
-			SaveHandler.SeenObjectTypes.ITEMS,
-			new Array<string>()
-		},
-		{
-			SaveHandler.SeenObjectTypes.NSFW_SCENES,
-			new Array<string>()
-		},
-		{
-			SaveHandler.SeenObjectTypes.BRAIN_DANCE_SCENES,
-			new Array<string>()
-		},
-		{
-			SaveHandler.SeenObjectTypes.POP_UPS,
-			new Array<string>()
-		}
-	};
+    public Godot.Collections.Dictionary<SaveHandler.SeenObjectTypes, Array<string>> SeenObjects = new Godot.Collections.Dictionary<SaveHandler.SeenObjectTypes, Array<string>>
+    {
+        {
+            SaveHandler.SeenObjectTypes.ITEMS,
+            new Array<string>()
+        },
+        {
+            SaveHandler.SeenObjectTypes.NSFW_SCENES,
+            new Array<string>()
+        },
+        {
+            SaveHandler.SeenObjectTypes.BRAIN_DANCE_SCENES,
+            new Array<string>()
+        },
+        {
+            SaveHandler.SeenObjectTypes.POP_UPS,
+            new Array<string>()
+        }
+    };
 
-	public int userTickets;
+    public int userTickets;
 
-	public Godot.Collections.Dictionary<string, Variant> minigameData = new Godot.Collections.Dictionary<string, Variant>();
+    public Godot.Collections.Dictionary<string, Variant> minigameData = new Godot.Collections.Dictionary<string, Variant>();
 
-	public Array<SaveHandler.Kinks> settingBlacklistedContent = new Array<SaveHandler.Kinks>();
+    public Array<SaveHandler.Kinks> settingBlacklistedContent = new Array<SaveHandler.Kinks>();
 
-	private Vector2 mouseOffset = Vector2.Zero;
+    private Vector2 mouseOffset = Vector2.Zero;
 
-	private bool selected;
+    private bool selected;
 
-	public bool SomethingHasBeenGrabbed;
+    public bool SomethingHasBeenGrabbed;
 
-	private Tween grabReleaseTween;
+    private Tween grabReleaseTween;
 
-	public ScreenDataHandler screenDataHandler = new ScreenDataHandler();
+    public ScreenDataHandler screenDataHandler = new ScreenDataHandler();
 
-	private bool isWalking;
+    private bool isWalking;
 
-	private int walkDirection = 1;
+    private int walkDirection = 1;
 
-	private const float WalkSpeed = 250f;
+    private const float WalkSpeed = 250f;
 
-	private float pickupWatchdogTimer;
+    private float pickupWatchdogTimer;
 
-	public float mouseVelocityScaler = 0.45f;
+    public float mouseVelocityScaler = 0.45f;
 
-	public float windowBounceDamping = -0.55f;
+    public float windowBounceDamping = -0.55f;
 
-	public float windowAirResist = 60f;
+    public float windowAirResist = 60f;
 
-	private Vector2 windowVelocity = Vector2.Zero;
+    private Vector2 windowVelocity = Vector2.Zero;
 
-	private bool isThrown;
+    private bool isThrown;
 
-	private const float windowGravity = 1400f;
+    private const float windowGravity = 1400f;
 
-	private const float windowDamping = 0.995f;
+    private const float windowDamping = 0.995f;
 
-	private bool isWalkingToTargetPosition;
+    private bool isWalkingToTargetPosition;
 
-	private int targetX;
+    private int targetX;
 
-	private ItemWindow walkTargetItem;
+    private ItemWindow walkTargetItem;
 
-	private ItemWindow storedItem;
+    private ItemWindow storedItem;
 
-	private bool inPickup;
+    private bool inPickup;
 
-	public bool isInConvo;
+    public bool isInConvo;
 
-	public Array<Window> spawnedMinigames = new Array<Window>();
+    public Array<Window> spawnedMinigames = new Array<Window>();
 
-	public PauseMenu Pause;
+    public PauseMenu Pause;
 
-	public TerminalWindow Terminal;
+    public TerminalWindow Terminal;
 
-	public bool AdminAccess;
+    public bool AdminAccess;
 
-	public MagnifierWindow Magnifier;
+    public MagnifierWindow Magnifier;
 
-	private bool _magnifierActive;
+    private bool _magnifierActive;
 
-		public static Main Instance { get; private set; }
+        public static Main Instance { get; private set; }
 
-	
+    
 
-	public override void _Ready()
-	{
+    public override void _Ready()
+    {
         if (!_isMobileChecked)
         {
             _isMobile = OS.HasFeature("mobile") || OS.HasFeature("android");
             _isMobileChecked = true;
         }
 
-		PowerThrottling.DisableThrottling();
-		Instance = this;
-		mainWindow = GetWindow();
-		if (!_isMobile) mainWindow.TransparentBg = true;
-		saveHandler.AttemptLoad();
-		mainCharacter.trueSize = (Vector2I)(mainCharacter.characterInformation.characterSize * mainCharacter.characterInformation.characterScale * settingSpriteScaler);
-		mainCharacter.SetupCharacter();
-		screenDataHandler.UpdateScreenInfo(mainCharacter.trueSize);
-		mainWindow.MinSize = mainCharacter.trueSize;
-		mainWindow.Size = mainWindow.MinSize;
-		if (!_isMobile) mainWindow.Borderless = true;
-		if (!_isMobile) mainWindow.Unresizable = true;
-		if (!_isMobile) mainWindow.AlwaysOnTop = true;
-		if (!_isMobile) mainWindow.GuiEmbedSubwindows = false;
-		if (!_isMobile) mainWindow.Transparent = true;
-		if (!_isMobile) mainWindow.Position = new Vector2I(DisplayServer.ScreenGetSize(screenDataHandler.screenIndex).X / 2 - mainCharacter.trueSize.X / 2, screenDataHandler.taskbarPos);
+        PowerThrottling.DisableThrottling();
+        Instance = this;
+        mainWindow = GetWindow();
+        if (!_isMobile) mainWindow.TransparentBg = true;
+        saveHandler.AttemptLoad();
+        mainCharacter.trueSize = (Vector2I)(mainCharacter.characterInformation.characterSize * mainCharacter.characterInformation.characterScale * settingSpriteScaler);
+        mainCharacter.SetupCharacter();
+        screenDataHandler.UpdateScreenInfo(mainCharacter.trueSize);
+        mainWindow.MinSize = mainCharacter.trueSize;
+        mainWindow.Size = mainWindow.MinSize;
+        if (!_isMobile) mainWindow.Borderless = true;
+        if (!_isMobile) mainWindow.Unresizable = true;
+        if (!_isMobile) mainWindow.AlwaysOnTop = true;
+        if (!_isMobile) mainWindow.GuiEmbedSubwindows = false;
+        if (!_isMobile) mainWindow.Transparent = true;
+        if (!_isMobile) mainWindow.Position = new Vector2I(DisplayServer.ScreenGetSize(screenDataHandler.screenIndex).X / 2 - mainCharacter.trueSize.X / 2, screenDataHandler.taskbarPos);
         else
         {
             Vector2I screenSize = DisplayServer.ScreenGetSize();
             Position = new Vector2(screenSize.X / 2 - mainCharacter.trueSize.X / 2, screenSize.Y - mainCharacter.trueSize.Y);
         }
-		Callable.From(delegate
-		{
-			BootDialogue(!settingEULA);
-		}).CallDeferred();
-	}
+        Callable.From(delegate
+        {
+            BootDialogue(!settingEULA);
+        }).CallDeferred();
+    }
 
-	public override void _Process(double delta)
-	{
-		if (!settingEULA)
-		{
-			GetTree().Paused = true;
-			ConfirmationMenu confirmationMenu = eulaMenu.Instantiate<ConfirmationMenu>(PackedScene.GenEditState.Disabled);
-			AddChild(confirmationMenu, forceReadableName: false, InternalMode.Disabled);
-			confirmationMenu.Confirmed += delegate
-			{
-				settingEULA = true;
-				GetTree().Paused = false;
-				saveHandler.SaveSettings();
-			};
-			confirmationMenu.Deny += delegate
-			{
-				GetTree().Quit();
-			};
-		}
-		if (inPickup)
-		{
-			pickupWatchdogTimer += (float)delta;
-			if (pickupWatchdogTimer > 6f)
-			{
-				GD.PrintErr("Pickup watchdog triggered — forcing release of stuck item.");
-				AbortActivePickup();
-				pickupWatchdogTimer = 0f;
-			}
-		}
-		else
-		{
-			pickupWatchdogTimer = 0f;
-		}
-		if (Input.IsActionJustPressed("PauseGame"))
-		{
-			PauseGame();
-		}
-		if (Input.IsActionJustPressed("Terminal"))
-		{
-			if (Terminal == null)
-			{
-				OpenTerminal();
-			}
-			else
-			{
-				Terminal.CallDeferred("queue_free");
-				Terminal = null;
-			}
-		}
-		if (Input.IsActionJustPressed("Screen_Lock") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
-		{
-			if (screenDataHandler.IsScreenLocked)
-			{
-				screenDataHandler.UnlockScreen();
-				ClearAllAttachments();
-				dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.UNLOCKED_FROM_MONITOR]);
-				PopDialogueInStack(skipTimer: true);
-			}
-			else
-			{
-				screenDataHandler.LockToCurrentScreen(mainCharacter.trueSize);
-				ClearAllAttachments();
-				dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.LOCKED_TO_MONITOR]);
-				PopDialogueInStack(skipTimer: true);
-			}
-		}
-		if (Input.IsActionPressed("Shift_Toggle") && Input.IsActionJustPressed("Despawn"))
-		{
-			RepositionAllItemsToMouseScreen();
-		}
-		Magnify(delta);
-		if (selected && mainCharacter.Visible)
-		{
-			FollowMouse(Unlocked: true);
-		}
-		else if (isThrown)
-		{
-			windowVelocity.Y += 1400f * (float)delta;
-			windowVelocity *= Mathf.Pow(0.995f, (float)delta * windowAirResist);
-			Vector2I position = new Vector2I(mainWindow.Position.X + Mathf.RoundToInt(windowVelocity.X * (float)delta), mainWindow.Position.Y + Mathf.RoundToInt(windowVelocity.Y * (float)delta));
-			int num = screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X);
-			if (num != position.X)
-			{
-				windowVelocity.X *= windowBounceDamping;
-				position.X = num;
-				mainCharacter.ApplyBounceRotation(windowVelocity.X);
-			}
-			if (position.Y >= screenDataHandler.taskbarPos)
-			{
-				position.Y = screenDataHandler.taskbarPos;
-				isThrown = false;
-				mainWindow.Position = position;
-				mainCharacter.BeginLand();
-				windowVelocity = Vector2.Zero;
-				mainCharacter.CancelThrowRotation();
-				CheckLandingInteraction(mainCharacter.throwWasHard);
-			}
-			mainWindow.Position = position;
-			mainCharacter.UpdateThrowRotation(delta);
-		}
-		else if (mainWindow.Position.Y < screenDataHandler.taskbarPos)
-		{
-			mainWindow.Position += new Vector2I(0, Mathf.RoundToInt(980f * (float)delta));
-		}
-		else
-		{
-			mainWindow.Position = new Vector2I(mainWindow.Position.X, screenDataHandler.taskbarPos);
-		}
-		if (mainCharacter.Visible)
-		{
-			MovePet();
-			if (Input.IsActionJustPressed("Pet") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
-			{
-				if (isInConvo)
-				{
-					dialogueStack.Clear();
-					dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.IN_CONVO]);
-					PopDialogueInStack(skipTimer: true);
-					isInConvo = false;
-				}
-				else
-				{
-					ClearAllAttachments();
-					DialogueDataRes dialogueDataRes = PickDialogue(mainCharacter.characterInformation.interactionTexts);
-					if (dialogueDataRes != null)
-					{
-						dialogueStack.Add(dialogueDataRes);
-						PopDialogueInStack(skipTimer: true);
-					}
-					if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
-					{
-						mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
-					}
-				}
-			}
-			if (Input.IsActionPressed("Pet") && GetThinnerCollisionBox().HasPoint(MobileMousePos()) && mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
-			{
-				mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
-			}
-			if (Input.IsActionJustPressed("Sit") && (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle || mainCharacter.petMainBodyState == Character.MainBodyStates.Walk))
-			{
-				isWalking = false;
-				AbortActivePickup();
-				mainCharacter.BeginSit();
-			}
-			if (Input.IsActionJustPressed("Clothing_Up"))
-			{
-				isWalking = false;
-				AbortActivePickup();
-				mainCharacter.SelectClothing(1);
-			}
-			if (Input.IsActionJustPressed("Clothing_Down"))
-			{
-				isWalking = false;
-				AbortActivePickup();
-				mainCharacter.SelectClothing(-1);
-			}
-			if (Input.IsActionJustPressed("Debug") && OS.HasFeature("editor"))
-			{
-				TrySetTargetToItem();
-				if (Mathf.Abs(mainWindow.Position.X - GetResolvedTargetX()) <= 5)
-				{
-					ReachedItemTarget();
-				}
-				else
-				{
-					StartAutoWalkToTarget();
-				}
-			}
-		}
-		else if (Input.IsActionJustPressed("Despawn") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
-		{
-			ClearAllAttachments();
-			dialogueStack.Clear();
-			dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.IN_CONVO]);
-			PopDialogueInStack(skipTimer: true);
-			mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
-		}
-		screenDataHandler.UpdateCurrentScreen(mainWindow, mainCharacter.trueSize);
-		if (spawnedAttachments.Count() <= 0)
-		{
-			return;
-		}
-		foreach (AttachObjWindow spawnedAttachment in spawnedAttachments)
-		{
-			if (GodotObject.IsInstanceValid(spawnedAttachment) && spawnedAttachment.attachObject.attachedItemInformation.attachmentTyping != AttachDataRes.AttachmentType.OVERRIDE)
-			{
-				spawnedAttachment.FollowParent();
-			}
-		}
-	}
+    public override void _Process(double delta)
+    {
+        if (!settingEULA)
+        {
+            GetTree().Paused = true;
+            ConfirmationMenu confirmationMenu = eulaMenu.Instantiate<ConfirmationMenu>(PackedScene.GenEditState.Disabled);
+            AddChild(confirmationMenu, forceReadableName: false, InternalMode.Disabled);
+            confirmationMenu.Confirmed += delegate
+            {
+                settingEULA = true;
+                GetTree().Paused = false;
+                saveHandler.SaveSettings();
+            };
+            confirmationMenu.Deny += delegate
+            {
+                GetTree().Quit();
+            };
+        }
+        if (inPickup)
+        {
+            pickupWatchdogTimer += (float)delta;
+            if (pickupWatchdogTimer > 6f)
+            {
+                GD.PrintErr("Pickup watchdog triggered — forcing release of stuck item.");
+                AbortActivePickup();
+                pickupWatchdogTimer = 0f;
+            }
+        }
+        else
+        {
+            pickupWatchdogTimer = 0f;
+        }
+        if (Input.IsActionJustPressed("PauseGame"))
+        {
+            PauseGame();
+        }
+        if (Input.IsActionJustPressed("Terminal"))
+        {
+            if (Terminal == null)
+            {
+                OpenTerminal();
+            }
+            else
+            {
+                Terminal.CallDeferred("queue_free");
+                Terminal = null;
+            }
+        }
+        if (Input.IsActionJustPressed("Screen_Lock") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
+        {
+            if (screenDataHandler.IsScreenLocked)
+            {
+                screenDataHandler.UnlockScreen();
+                ClearAllAttachments();
+                dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.UNLOCKED_FROM_MONITOR]);
+                PopDialogueInStack(skipTimer: true);
+            }
+            else
+            {
+                screenDataHandler.LockToCurrentScreen(mainCharacter.trueSize);
+                ClearAllAttachments();
+                dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.LOCKED_TO_MONITOR]);
+                PopDialogueInStack(skipTimer: true);
+            }
+        }
+        if (Input.IsActionPressed("Shift_Toggle") && Input.IsActionJustPressed("Despawn"))
+        {
+            RepositionAllItemsToMouseScreen();
+        }
+        Magnify(delta);
+        if (selected && mainCharacter.Visible)
+        {
+            FollowMouse(Unlocked: true);
+        }
+        else if (isThrown)
+        {
+            windowVelocity.Y += 1400f * (float)delta;
+            windowVelocity *= Mathf.Pow(0.995f, (float)delta * windowAirResist);
+            if (_isMobile)
+            {
+                Vector2I screenSize = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
+                int groundY = screenSize.Y - mainCharacter.trueSize.Y;
+                Vector2 pos = Position + windowVelocity * (float)delta;
+                if (pos.X < 0f)
+                {
+                    pos.X = 0f;
+                    windowVelocity.X *= windowBounceDamping;
+                    mainCharacter.ApplyBounceRotation(windowVelocity.X);
+                }
+                else if (pos.X > (float)(screenSize.X - mainCharacter.trueSize.X))
+                {
+                    pos.X = screenSize.X - mainCharacter.trueSize.X;
+                    windowVelocity.X *= windowBounceDamping;
+                    mainCharacter.ApplyBounceRotation(windowVelocity.X);
+                }
+                if (pos.Y >= (float)groundY)
+                {
+                    pos.Y = groundY;
+                    isThrown = false;
+                    windowVelocity = Vector2.Zero;
+                    mainCharacter.CancelThrowRotation();
+                    mainCharacter.BeginLand();
+                    CheckLandingInteraction(mainCharacter.throwWasHard);
+                }
+                Position = pos;
+                mainCharacter.UpdateThrowRotation(delta);
+            }
+            else
+            {
+                Vector2I position = new Vector2I(mainWindow.Position.X + Mathf.RoundToInt(windowVelocity.X * (float)delta), mainWindow.Position.Y + Mathf.RoundToInt(windowVelocity.Y * (float)delta));
+                int num = screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X);
+                if (num != position.X)
+                {
+                    windowVelocity.X *= windowBounceDamping;
+                    position.X = num;
+                    mainCharacter.ApplyBounceRotation(windowVelocity.X);
+                }
+                if (position.Y >= screenDataHandler.taskbarPos)
+                {
+                    position.Y = screenDataHandler.taskbarPos;
+                    isThrown = false;
+                    mainWindow.Position = position;
+                    mainCharacter.BeginLand();
+                    windowVelocity = Vector2.Zero;
+                    mainCharacter.CancelThrowRotation();
+                    CheckLandingInteraction(mainCharacter.throwWasHard);
+                }
+                mainWindow.Position = position;
+                mainCharacter.UpdateThrowRotation(delta);
+            }
+        }
+        else if (_isMobile)
+        {
+            Vector2I screenSize = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
+            int groundY = screenSize.Y - mainCharacter.trueSize.Y;
+            if (Position.Y < (float)groundY)
+            {
+                Position += new Vector2(0f, 980f * (float)delta);
+                if (Position.Y > (float)groundY)
+                {
+                    Position = new Vector2(Position.X, groundY);
+                }
+            }
+            else
+            {
+                Position = new Vector2(Position.X, groundY);
+            }
+        }
+        else
+        {
+            if (mainWindow.Position.Y < screenDataHandler.taskbarPos)
+            {
+                mainWindow.Position += new Vector2I(0, Mathf.RoundToInt(980f * (float)delta));
+            }
+            else
+            {
+                mainWindow.Position = new Vector2I(mainWindow.Position.X, screenDataHandler.taskbarPos);
+            }
+        }
+        if (mainCharacter.Visible)
+        {
+            MovePet();
+            if (Input.IsActionJustPressed("Pet") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
+            {
+                if (isInConvo)
+                {
+                    dialogueStack.Clear();
+                    dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.IN_CONVO]);
+                    PopDialogueInStack(skipTimer: true);
+                    isInConvo = false;
+                }
+                else
+                {
+                    ClearAllAttachments();
+                    DialogueDataRes dialogueDataRes = PickDialogue(mainCharacter.characterInformation.interactionTexts);
+                    if (dialogueDataRes != null)
+                    {
+                        dialogueStack.Add(dialogueDataRes);
+                        PopDialogueInStack(skipTimer: true);
+                    }
+                    if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
+                    {
+                        mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
+                    }
+                }
+            }
+            if (Input.IsActionPressed("Pet") && GetThinnerCollisionBox().HasPoint(MobileMousePos()) && mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
+            {
+                mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
+            }
+            if (Input.IsActionJustPressed("Sit") && (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle || mainCharacter.petMainBodyState == Character.MainBodyStates.Walk))
+            {
+                isWalking = false;
+                AbortActivePickup();
+                mainCharacter.BeginSit();
+            }
+            if (Input.IsActionJustPressed("Clothing_Up"))
+            {
+                isWalking = false;
+                AbortActivePickup();
+                mainCharacter.SelectClothing(1);
+            }
+            if (Input.IsActionJustPressed("Clothing_Down"))
+            {
+                isWalking = false;
+                AbortActivePickup();
+                mainCharacter.SelectClothing(-1);
+            }
+            if (Input.IsActionJustPressed("Debug") && OS.HasFeature("editor"))
+            {
+                TrySetTargetToItem();
+                if (Mathf.Abs(mainWindow.Position.X - GetResolvedTargetX()) <= 5)
+                {
+                    ReachedItemTarget();
+                }
+                else
+                {
+                    StartAutoWalkToTarget();
+                }
+            }
+        }
+        else if (Input.IsActionJustPressed("Despawn") && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
+        {
+            ClearAllAttachments();
+            dialogueStack.Clear();
+            dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.IN_CONVO]);
+            PopDialogueInStack(skipTimer: true);
+            mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
+        }
+        screenDataHandler.UpdateCurrentScreen(mainWindow, mainCharacter.trueSize);
+        if (spawnedAttachments.Count() <= 0)
+        {
+            return;
+        }
+        foreach (AttachObjWindow spawnedAttachment in spawnedAttachments)
+        {
+            if (GodotObject.IsInstanceValid(spawnedAttachment) && spawnedAttachment.attachObject.attachedItemInformation.attachmentTyping != AttachDataRes.AttachmentType.OVERRIDE)
+            {
+                spawnedAttachment.FollowParent();
+            }
+        }
+    }
 
-	public override void _PhysicsProcess(double delta)
-	{
-		if (isWalking && mainCharacter.Visible)
-		{
-			Walk(delta);
-		}
-		if (selected)
-		{
-			mainCharacter.UpdateDangle(delta);
-		}
-	}
+    public override void _PhysicsProcess(double delta)
+    {
+        if (isWalking && mainCharacter.Visible)
+        {
+            Walk(delta);
+        }
+        if (selected)
+        {
+            mainCharacter.UpdateDangle(delta);
+        }
+    }
 
-	public void Magnify(double delta)
-	{
-		if (Input.IsActionJustPressed("Magnifier") && Terminal == null && spawnedMinigames.Count == 0)
-		{
-			if (!_magnifierActive)
-			{
-				_magnifierActive = true;
-				MagnifierWindow node = (Magnifier = magnifierScene.Instantiate<MagnifierWindow>(PackedScene.GenEditState.Disabled));
-				Magnifier.Size = new Vector2I((int)((float)Magnifier.Size.X * settingUIScaler), (int)((float)Magnifier.Size.Y * settingUIScaler));
-				GetTree().Root.AddChild(node, forceReadableName: false, InternalMode.Disabled);
-			}
-			else
-			{
-				_magnifierActive = false;
-				if (Magnifier != null && GodotObject.IsInstanceValid(Magnifier))
-				{
-					Magnifier.QueueFree();
-				}
-				Magnifier = null;
-			}
-		}
-		if (Magnifier != null && GodotObject.IsInstanceValid(Magnifier))
-		{
-			if (Input.IsActionJustReleased("MouseWheelUp"))
-			{
-				Magnifier.AdjustMagnification(0.5f);
-			}
-			else if (Input.IsActionJustReleased("MouseWheelDown"))
-			{
-				Magnifier.AdjustMagnification(-0.5f);
-			}
-		}
-	}
+    public void Magnify(double delta)
+    {
+        if (Input.IsActionJustPressed("Magnifier") && Terminal == null && spawnedMinigames.Count == 0)
+        {
+            if (!_magnifierActive)
+            {
+                _magnifierActive = true;
+                MagnifierWindow node = (Magnifier = magnifierScene.Instantiate<MagnifierWindow>(PackedScene.GenEditState.Disabled));
+                Magnifier.Size = new Vector2I((int)((float)Magnifier.Size.X * settingUIScaler), (int)((float)Magnifier.Size.Y * settingUIScaler));
+                GetTree().Root.AddChild(node, forceReadableName: false, InternalMode.Disabled);
+            }
+            else
+            {
+                _magnifierActive = false;
+                if (Magnifier != null && GodotObject.IsInstanceValid(Magnifier))
+                {
+                    Magnifier.QueueFree();
+                }
+                Magnifier = null;
+            }
+        }
+        if (Magnifier != null && GodotObject.IsInstanceValid(Magnifier))
+        {
+            if (Input.IsActionJustReleased("MouseWheelUp"))
+            {
+                Magnifier.AdjustMagnification(0.5f);
+            }
+            else if (Input.IsActionJustReleased("MouseWheelDown"))
+            {
+                Magnifier.AdjustMagnification(-0.5f);
+            }
+        }
+    }
 
-	private void RepositionAllItemsToMouseScreen()
-	{
-		if (spawnedItems.Count == 0)
-		{
-			return;
-		}
-		Vector2I vector2I = MobileMousePos();
-		int screenCount = DisplayServer.GetScreenCount();
-		Rect2I rect2I = DisplayServer.ScreenGetUsableRect(0);
-		for (int i = 0; i < screenCount; i++)
-		{
-			Rect2I rect2I2 = DisplayServer.ScreenGetUsableRect(i);
-			if (vector2I.X >= rect2I2.Position.X && vector2I.X < rect2I2.Position.X + rect2I2.Size.X && vector2I.Y >= rect2I2.Position.Y && vector2I.Y < rect2I2.Position.Y + rect2I2.Size.Y)
-			{
-				rect2I = rect2I2;
-				break;
-			}
-		}
-		foreach (ItemWindow spawnedItem in spawnedItems)
-		{
-			if (GodotObject.IsInstanceValid(spawnedItem))
-			{
-				int x = (int)GD.RandRange((float)rect2I.Position.X + spawnMargin.X, (float)(rect2I.Position.X + rect2I.Size.X) - spawnMargin.X);
-				int y = rect2I.Position.Y - Mathf.RoundToInt(spawnMargin.Y);
-				spawnedItem.Position = new Vector2I(x, y);
-			}
-		}
-	}
+    private void RepositionAllItemsToMouseScreen()
+    {
+        if (spawnedItems.Count == 0)
+        {
+            return;
+        }
+        Vector2I vector2I = MobileMousePos();
+        int screenCount = DisplayServer.GetScreenCount();
+        Rect2I rect2I = DisplayServer.ScreenGetUsableRect(0);
+        for (int i = 0; i < screenCount; i++)
+        {
+            Rect2I rect2I2 = DisplayServer.ScreenGetUsableRect(i);
+            if (vector2I.X >= rect2I2.Position.X && vector2I.X < rect2I2.Position.X + rect2I2.Size.X && vector2I.Y >= rect2I2.Position.Y && vector2I.Y < rect2I2.Position.Y + rect2I2.Size.Y)
+            {
+                rect2I = rect2I2;
+                break;
+            }
+        }
+        foreach (ItemWindow spawnedItem in spawnedItems)
+        {
+            if (GodotObject.IsInstanceValid(spawnedItem))
+            {
+                int x = (int)GD.RandRange((float)rect2I.Position.X + spawnMargin.X, (float)(rect2I.Position.X + rect2I.Size.X) - spawnMargin.X);
+                int y = rect2I.Position.Y - Mathf.RoundToInt(spawnMargin.Y);
+                spawnedItem.Position = new Vector2I(x, y);
+            }
+        }
+    }
 
-	public void BootDialogue(bool firstTime = false)
-	{
-		if (firstTime && mainCharacter.characterInformation.firstTimeStartupMessage != null)
-		{
-			if (userInfoName == "USER")
-			{
-				string text = System.Environment.GetEnvironmentVariable("USERNAME") ?? System.Environment.GetEnvironmentVariable("USER") ?? "USER";
-				userInfoName = text;
-				saveHandler.SaveSettings();
-			}
-			ClearAllAttachments();
-			dialogueStack.Add(mainCharacter.characterInformation.firstTimeStartupMessage);
-			PopDialogueInStack(skipTimer: true);
-			if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
-			{
-				mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Wave", 0.5f);
-			}
-		}
-		else
-		{
-			if (mainCharacter.characterInformation.welcomeMessages.Count() == 0)
-			{
-				return;
-			}
-			ClearAllAttachments();
-			List<DialogueDataRes> list = mainCharacter.characterInformation.welcomeMessages.Where((DialogueDataRes d) => !IsBlacklisted(d.taggedKinks)).ToList();
-			if (list.Count > 0)
-			{
-				dialogueStack.Add(list[(int)(GD.Randi() % list.Count)]);
-				PopDialogueInStack(skipTimer: true);
-				if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
-				{
-					mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Wave", 0.5f);
-				}
-			}
-		}
-	}
+    public void BootDialogue(bool firstTime = false)
+    {
+        if (firstTime && mainCharacter.characterInformation.firstTimeStartupMessage != null)
+        {
+            if (userInfoName == "USER")
+            {
+                string text = System.Environment.GetEnvironmentVariable("USERNAME") ?? System.Environment.GetEnvironmentVariable("USER") ?? "USER";
+                userInfoName = text;
+                saveHandler.SaveSettings();
+            }
+            ClearAllAttachments();
+            dialogueStack.Add(mainCharacter.characterInformation.firstTimeStartupMessage);
+            PopDialogueInStack(skipTimer: true);
+            if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
+            {
+                mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Wave", 0.5f);
+            }
+        }
+        else
+        {
+            if (mainCharacter.characterInformation.welcomeMessages.Count() == 0)
+            {
+                return;
+            }
+            ClearAllAttachments();
+            List<DialogueDataRes> list = mainCharacter.characterInformation.welcomeMessages.Where((DialogueDataRes d) => !IsBlacklisted(d.taggedKinks)).ToList();
+            if (list.Count > 0)
+            {
+                dialogueStack.Add(list[(int)(GD.Randi() % list.Count)]);
+                PopDialogueInStack(skipTimer: true);
+                if (mainCharacter.petMainBodyState == Character.MainBodyStates.Idle)
+                {
+                    mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Wave", 0.5f);
+                }
+            }
+        }
+    }
 
-	public void PauseGame()
-	{
-		bool flag = false;
-		foreach (MinigameBase spawnedMinigame in spawnedMinigames)
-		{
-			if (spawnedMinigame.OverridePause)
-			{
-				flag = true;
-			}
-			spawnedMinigame.PauseGame(Pause: true);
-		}
-		if (!flag)
-		{
-			AbortActivePickup();
-			PauseMenu pauseMenu = this.pauseMenu.Instantiate<PauseMenu>(PackedScene.GenEditState.Disabled);
-			pauseMenu.Size = new Vector2I(Mathf.RoundToInt((float)pauseMenu.Size.X * settingUIScaler), Mathf.RoundToInt((float)pauseMenu.Size.Y * settingUIScaler));
-			Pause = pauseMenu;
-			AddChild(pauseMenu, forceReadableName: false, InternalMode.Disabled);
-			GetTree().Paused = true;
-		}
-	}
+    public void PauseGame()
+    {
+        bool flag = false;
+        foreach (MinigameBase spawnedMinigame in spawnedMinigames)
+        {
+            if (spawnedMinigame.OverridePause)
+            {
+                flag = true;
+            }
+            spawnedMinigame.PauseGame(Pause: true);
+        }
+        if (!flag)
+        {
+            AbortActivePickup();
+            PauseMenu pauseMenu = this.pauseMenu.Instantiate<PauseMenu>(PackedScene.GenEditState.Disabled);
+            pauseMenu.Size = new Vector2I(Mathf.RoundToInt((float)pauseMenu.Size.X * settingUIScaler), Mathf.RoundToInt((float)pauseMenu.Size.Y * settingUIScaler));
+            Pause = pauseMenu;
+            AddChild(pauseMenu, forceReadableName: false, InternalMode.Disabled);
+            GetTree().Paused = true;
+        }
+    }
 
-	public void OpenTerminal()
-	{
-		AbortActivePickup();
-		TerminalWindow terminalWindow = terminalMenu.Instantiate<TerminalWindow>(PackedScene.GenEditState.Disabled);
-		terminalWindow.Size = new Vector2I(Mathf.RoundToInt((float)terminalWindow.Size.X * settingUIScaler), Mathf.RoundToInt((float)terminalWindow.Size.Y * settingUIScaler));
-		AddChild(terminalWindow, forceReadableName: false, InternalMode.Disabled);
-		Terminal = terminalWindow;
-	}
+    public void OpenTerminal()
+    {
+        AbortActivePickup();
+        TerminalWindow terminalWindow = terminalMenu.Instantiate<TerminalWindow>(PackedScene.GenEditState.Disabled);
+        terminalWindow.Size = new Vector2I(Mathf.RoundToInt((float)terminalWindow.Size.X * settingUIScaler), Mathf.RoundToInt((float)terminalWindow.Size.Y * settingUIScaler));
+        AddChild(terminalWindow, forceReadableName: false, InternalMode.Disabled);
+        Terminal = terminalWindow;
+    }
 
-	public void CallCharacterForcedAnimation(string animationName, float animationTime)
-	{
-		isWalking = false;
-		mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, animationName, animationTime);
-	}
+    public void CallCharacterForcedAnimation(string animationName, float animationTime)
+    {
+        isWalking = false;
+        mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, animationName, animationTime);
+    }
 
-	public void CallCharacterAttachmentSpawn(AttachDataRes objData, bool unclearableAttachment = false)
-	{
-		CallCharacterAttachmentSpawn(objData, unclearableAttachment, null);
-	}
+    public void CallCharacterAttachmentSpawn(AttachDataRes objData, bool unclearableAttachment = false)
+    {
+        CallCharacterAttachmentSpawn(objData, unclearableAttachment, null);
+    }
 
-	public void CallCharacterAttachmentSpawn(AttachDataRes objData, bool unclearableAttachment, Window targetWindow)
-	{
-		if (settingRemovePopups && objData.attachmentTyping == AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW)
-		{
-			if (objData.possibleItems.Count() <= 0 || !((float)GD.RandRange(0, 100) <= objData.chanceOfItem))
-			{
-				return;
-			}
-			WeightGroup<ItemDataRes> weightGroup = new WeightGroup<ItemDataRes>();
-			foreach (ItemDataRes possibleItem in objData.possibleItems)
-			{
-				if (!IsBlacklisted(possibleItem.taggedKinks))
-				{
-					weightGroup.Add(possibleItem, Mathf.Clamp(possibleItem.itemSpawnWeight, 1.0, 10000.0));
-				}
-			}
-			if (weightGroup.Count() == 0)
-			{
-				return;
-			}
-			ItemDataRes item = weightGroup.GetItem(GD.RandRange(0, 10000));
-			int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
-			int y = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
-			int screenCount = DisplayServer.GetScreenCount();
-			for (int i = 0; i < screenCount; i++)
-			{
-				Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
-				if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
-				{
-					y = rect2I.Position.Y;
-					break;
-				}
-			}
-			Vector2I spawningPosition = new Vector2I(num, y - Mathf.RoundToInt(spawnMargin.Y));
-			CallItemSpawn(item, spawningPosition);
-		}
-		else
-		{
-			AttachObjWindow attachObjWindow = AttachmentObjectScene.Instantiate<AttachObjWindow>(PackedScene.GenEditState.Disabled);
-			attachObjWindow.attachObject.attachedItemInformation = objData;
-			if (targetWindow != null)
-			{
-				attachObjWindow.parentWindow = targetWindow;
-			}
-			attachObjWindow.SetupAttachmentWindow();
-			AddChild(attachObjWindow, forceReadableName: false, InternalMode.Disabled);
-			if (!unclearableAttachment)
-			{
-				spawnedAttachments.Add(attachObjWindow);
-			}
-		}
-	}
+    public void CallCharacterAttachmentSpawn(AttachDataRes objData, bool unclearableAttachment, Window targetWindow)
+    {
+        if (settingRemovePopups && objData.attachmentTyping == AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW)
+        {
+            if (objData.possibleItems.Count() <= 0 || !((float)GD.RandRange(0, 100) <= objData.chanceOfItem))
+            {
+                return;
+            }
+            WeightGroup<ItemDataRes> weightGroup = new WeightGroup<ItemDataRes>();
+            foreach (ItemDataRes possibleItem in objData.possibleItems)
+            {
+                if (!IsBlacklisted(possibleItem.taggedKinks))
+                {
+                    weightGroup.Add(possibleItem, Mathf.Clamp(possibleItem.itemSpawnWeight, 1.0, 10000.0));
+                }
+            }
+            if (weightGroup.Count() == 0)
+            {
+                return;
+            }
+            ItemDataRes item = weightGroup.GetItem(GD.RandRange(0, 10000));
+            int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
+            int y = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
+            int screenCount = DisplayServer.GetScreenCount();
+            for (int i = 0; i < screenCount; i++)
+            {
+                Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
+                if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
+                {
+                    y = rect2I.Position.Y;
+                    break;
+                }
+            }
+            Vector2I spawningPosition = new Vector2I(num, y - Mathf.RoundToInt(spawnMargin.Y));
+            CallItemSpawn(item, spawningPosition);
+        }
+        else
+        {
+            AttachObjWindow attachObjWindow = AttachmentObjectScene.Instantiate<AttachObjWindow>(PackedScene.GenEditState.Disabled);
+            attachObjWindow.attachObject.attachedItemInformation = objData;
+            if (targetWindow != null)
+            {
+                attachObjWindow.parentWindow = targetWindow;
+            }
+            attachObjWindow.SetupAttachmentWindow();
+            AddChild(attachObjWindow, forceReadableName: false, InternalMode.Disabled);
+            if (!unclearableAttachment)
+            {
+                spawnedAttachments.Add(attachObjWindow);
+            }
+        }
+    }
 
-	public async void PopDialogueInStack(bool skipTimer = false)
-	{
-		if (dialogueStack != null && dialogueStack.Count() > 0)
-		{
-			if (!skipTimer)
-			{
-				float num = (float)GD.RandRange(timeBetweenStacks.X, timeBetweenStacks.Y);
-				await ToSignal(GetTree().CreateTimer(num), SceneTreeTimer.SignalName.Timeout);
-			}
-			if (dialogueStack.Count() != 0)
-			{
-				CallCharacterDialogueAttachmentSpawn(dialogueStack[0]);
-				dialogueStack.RemoveAt(0);
-			}
-		}
-		else if (isInConvo)
-		{
-			isInConvo = false;
-		}
-	}
+    public async void PopDialogueInStack(bool skipTimer = false)
+    {
+        if (dialogueStack != null && dialogueStack.Count() > 0)
+        {
+            if (!skipTimer)
+            {
+                float num = (float)GD.RandRange(timeBetweenStacks.X, timeBetweenStacks.Y);
+                await ToSignal(GetTree().CreateTimer(num), SceneTreeTimer.SignalName.Timeout);
+            }
+            if (dialogueStack.Count() != 0)
+            {
+                CallCharacterDialogueAttachmentSpawn(dialogueStack[0]);
+                dialogueStack.RemoveAt(0);
+            }
+        }
+        else if (isInConvo)
+        {
+            isInConvo = false;
+        }
+    }
 
-	public void CallCharacterDialogueAttachmentSpawn(DialogueDataRes diaData)
-	{
-		AttachObjWindow attachObjWindow = AttachmentObjectScene.Instantiate<AttachObjWindow>(PackedScene.GenEditState.Disabled);
-		attachObjWindow.attachObject.attachedItemInformation = (AttachDataRes)defaultTextDataRes.Duplicate(deep: true);
-		if (diaData.BubbleMargin != attachObjWindow.attachObject.attachedItemInformation.attachmentMargin)
-		{
-			attachObjWindow.attachObject.attachedItemInformation.attachmentMargin = diaData.BubbleMargin;
-			if (diaData.BubbleMargin.Y == 0f)
-			{
-				GD.PrintErr("Dialogue Y Margin set to 0, please set it to a number above!");
-			}
-		}
-		if (!string.IsNullOrEmpty(diaData.speakingActorID) && !(diaData.speakingActorID == mainCharacter.characterInformation._itemID))
-		{
-			foreach (ActorWindow spawnedActor in spawnedActors)
-			{
-				if (GodotObject.IsInstanceValid(spawnedActor) && spawnedActor.characterActor.characterInformation == ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][diaData.speakingActorID])
-				{
-					attachObjWindow.parentWindow = spawnedActor;
-					break;
-				}
-			}
-		}
-		AddChild(attachObjWindow, forceReadableName: false, InternalMode.Disabled);
-		attachObjWindow.CallDeferred("SetupAttachmentWindow", diaData);
-		spawnedAttachments.Add(attachObjWindow);
-	}
+    public void CallCharacterDialogueAttachmentSpawn(DialogueDataRes diaData)
+    {
+        AttachObjWindow attachObjWindow = AttachmentObjectScene.Instantiate<AttachObjWindow>(PackedScene.GenEditState.Disabled);
+        attachObjWindow.attachObject.attachedItemInformation = (AttachDataRes)defaultTextDataRes.Duplicate(deep: true);
+        if (diaData.BubbleMargin != attachObjWindow.attachObject.attachedItemInformation.attachmentMargin)
+        {
+            attachObjWindow.attachObject.attachedItemInformation.attachmentMargin = diaData.BubbleMargin;
+            if (diaData.BubbleMargin.Y == 0f)
+            {
+                GD.PrintErr("Dialogue Y Margin set to 0, please set it to a number above!");
+            }
+        }
+        if (!string.IsNullOrEmpty(diaData.speakingActorID) && !(diaData.speakingActorID == mainCharacter.characterInformation._itemID))
+        {
+            foreach (ActorWindow spawnedActor in spawnedActors)
+            {
+                if (GodotObject.IsInstanceValid(spawnedActor) && spawnedActor.characterActor.characterInformation == ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][diaData.speakingActorID])
+                {
+                    attachObjWindow.parentWindow = spawnedActor;
+                    break;
+                }
+            }
+        }
+        AddChild(attachObjWindow, forceReadableName: false, InternalMode.Disabled);
+        attachObjWindow.CallDeferred("SetupAttachmentWindow", diaData);
+        spawnedAttachments.Add(attachObjWindow);
+    }
 
-	public void CallActorSpawn(CharacterInfoDataRes spawningActor)
-	{
-		CallActorSpawn(spawningActor, Vector2I.Zero);
-	}
+    public void CallActorSpawn(CharacterInfoDataRes spawningActor)
+    {
+        CallActorSpawn(spawningActor, Vector2I.Zero);
+    }
 
-	public void CallActorSpawn(CharacterInfoDataRes spawningActor, Vector2I Pos, ActorWindow possibleTarget = null)
-	{
-		ActorWindow actorWindow = actorScene.Instantiate<ActorWindow>(PackedScene.GenEditState.Disabled);
-		actorWindow.characterActor.characterInformation = spawningActor;
-		actorWindow.targetWindow = possibleTarget;
-		AddChild(actorWindow, forceReadableName: false, InternalMode.Disabled);
-		actorWindow.CallDeferred("SetupActorWindow", Pos, spawningActor);
-		spawnedActors.Add(actorWindow);
-		if (spawningActor.AITyping == CharacterInfoDataRes.AITypes.COMPANION)
-		{
-			spawnedCompanions.Add(actorWindow);
-		}
-	}
+    public void CallActorSpawn(CharacterInfoDataRes spawningActor, Vector2I Pos, ActorWindow possibleTarget = null)
+    {
+        ActorWindow actorWindow = actorScene.Instantiate<ActorWindow>(PackedScene.GenEditState.Disabled);
+        actorWindow.characterActor.characterInformation = spawningActor;
+        actorWindow.targetWindow = possibleTarget;
+        AddChild(actorWindow, forceReadableName: false, InternalMode.Disabled);
+        actorWindow.CallDeferred("SetupActorWindow", Pos, spawningActor);
+        spawnedActors.Add(actorWindow);
+        if (spawningActor.AITyping == CharacterInfoDataRes.AITypes.COMPANION)
+        {
+            spawnedCompanions.Add(actorWindow);
+        }
+    }
 
-	public void CallItemSpawn(ItemDataRes spawningItem, Vector2I spawningPosition)
-	{
-		ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
-		itemWindow.SetupItemWindow(spawningItem);
-		AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
-		GD.Print("Item Spawn Position [" + spawningPosition.ToString() + "] - Current Byte Position [" + mainWindow.Position.ToString() + "]");
-		itemWindow.Position = spawningPosition;
-		spawnedItems.Add(itemWindow);
-	}
+    public void CallItemSpawn(ItemDataRes spawningItem, Vector2I spawningPosition)
+    {
+        ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
+        itemWindow.SetupItemWindow(spawningItem);
+        AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
+        GD.Print("Item Spawn Position [" + spawningPosition.ToString() + "] - Current Byte Position [" + mainWindow.Position.ToString() + "]");
+        itemWindow.Position = spawningPosition;
+        spawnedItems.Add(itemWindow);
+    }
 
-	public void CallPackedSceneSpawn(string genericID)
-	{
-		if (string.IsNullOrEmpty(genericID))
-		{
-			GD.PrintErr("CallGenericSpawn: genericID is null or empty.");
-			return;
-		}
-		if (!ResourceCache.prefabsLoaded.ContainsKey(ResourceCache.PrefabTyping.UNTYPED) || !ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.UNTYPED].ContainsKey(genericID))
-		{
-			GD.PrintErr("CallGenericSpawn: No generic found with ID '" + genericID + "'.");
-			return;
-		}
-		PackedScene packedScene = ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.UNTYPED][genericID];
-		Window genericInstance = packedScene.Instantiate<Window>(PackedScene.GenEditState.Disabled);
-		genericInstance.Name = genericID;
-		genericInstance.Size = new Vector2I(Mathf.RoundToInt((float)genericInstance.Size.X * settingUIScaler), Mathf.RoundToInt((float)genericInstance.Size.Y * settingUIScaler));
-		GetTree().Root.AddChild(genericInstance, forceReadableName: false, InternalMode.Disabled);
-		genericInstance.CloseRequested += delegate
-		{
-			mainWindow.GrabFocus();
-			genericInstance.QueueFree();
-		};
-		GD.Print("CallGenericSpawn: Spawned generic '" + genericID + "'.");
-	}
+    public void CallPackedSceneSpawn(string genericID)
+    {
+        if (string.IsNullOrEmpty(genericID))
+        {
+            GD.PrintErr("CallGenericSpawn: genericID is null or empty.");
+            return;
+        }
+        if (!ResourceCache.prefabsLoaded.ContainsKey(ResourceCache.PrefabTyping.UNTYPED) || !ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.UNTYPED].ContainsKey(genericID))
+        {
+            GD.PrintErr("CallGenericSpawn: No generic found with ID '" + genericID + "'.");
+            return;
+        }
+        PackedScene packedScene = ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.UNTYPED][genericID];
+        Window genericInstance = packedScene.Instantiate<Window>(PackedScene.GenEditState.Disabled);
+        genericInstance.Name = genericID;
+        genericInstance.Size = new Vector2I(Mathf.RoundToInt((float)genericInstance.Size.X * settingUIScaler), Mathf.RoundToInt((float)genericInstance.Size.Y * settingUIScaler));
+        GetTree().Root.AddChild(genericInstance, forceReadableName: false, InternalMode.Disabled);
+        genericInstance.CloseRequested += delegate
+        {
+            mainWindow.GrabFocus();
+            genericInstance.QueueFree();
+        };
+        GD.Print("CallGenericSpawn: Spawned generic '" + genericID + "'.");
+    }
 
-	public void CallMinigameSpawn(string minigameID)
-	{
-		if (string.IsNullOrEmpty(minigameID))
-		{
-			GD.PrintErr("CallMinigameSpawn: minigameID is null or empty.");
-			return;
-		}
-		if (!ResourceCache.prefabsLoaded.ContainsKey(ResourceCache.PrefabTyping.MINIGAME) || !ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.MINIGAME].ContainsKey(minigameID))
-		{
-			GD.PrintErr("CallMinigameSpawn: No minigame found with ID '" + minigameID + "'.");
-			return;
-		}
-		foreach (Window spawnedMinigame in spawnedMinigames)
-		{
-			if (GodotObject.IsInstanceValid(spawnedMinigame) && spawnedMinigame.Name == (StringName)minigameID)
-			{
-				GD.Print("CallMinigameSpawn: '" + minigameID + "' is already open.");
-				spawnedMinigame.GrabFocus();
-				return;
-			}
-		}
-		PackedScene packedScene = ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.MINIGAME][minigameID];
-		Window minigameInstance = packedScene.Instantiate<Window>(PackedScene.GenEditState.Disabled);
-		minigameInstance.Name = minigameID;
-		minigameInstance.Size = new Vector2I(Mathf.RoundToInt((float)minigameInstance.Size.X * settingUIScaler), Mathf.RoundToInt((float)minigameInstance.Size.Y * settingUIScaler));
-		GetTree().Root.AddChild(minigameInstance, forceReadableName: false, InternalMode.Disabled);
-		spawnedMinigames.Add(minigameInstance);
-		minigameInstance.CloseRequested += delegate
-		{
-			mainWindow.GrabFocus();
-			spawnedMinigames.Remove(minigameInstance);
-			minigameInstance.QueueFree();
-		};
-		GD.Print("CallMinigameSpawn: Spawned minigame '" + minigameID + "'.");
-	}
+    public void CallMinigameSpawn(string minigameID)
+    {
+        if (string.IsNullOrEmpty(minigameID))
+        {
+            GD.PrintErr("CallMinigameSpawn: minigameID is null or empty.");
+            return;
+        }
+        if (!ResourceCache.prefabsLoaded.ContainsKey(ResourceCache.PrefabTyping.MINIGAME) || !ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.MINIGAME].ContainsKey(minigameID))
+        {
+            GD.PrintErr("CallMinigameSpawn: No minigame found with ID '" + minigameID + "'.");
+            return;
+        }
+        foreach (Window spawnedMinigame in spawnedMinigames)
+        {
+            if (GodotObject.IsInstanceValid(spawnedMinigame) && spawnedMinigame.Name == (StringName)minigameID)
+            {
+                GD.Print("CallMinigameSpawn: '" + minigameID + "' is already open.");
+                spawnedMinigame.GrabFocus();
+                return;
+            }
+        }
+        PackedScene packedScene = ResourceCache.prefabsLoaded[ResourceCache.PrefabTyping.MINIGAME][minigameID];
+        Window minigameInstance = packedScene.Instantiate<Window>(PackedScene.GenEditState.Disabled);
+        minigameInstance.Name = minigameID;
+        minigameInstance.Size = new Vector2I(Mathf.RoundToInt((float)minigameInstance.Size.X * settingUIScaler), Mathf.RoundToInt((float)minigameInstance.Size.Y * settingUIScaler));
+        GetTree().Root.AddChild(minigameInstance, forceReadableName: false, InternalMode.Disabled);
+        spawnedMinigames.Add(minigameInstance);
+        minigameInstance.CloseRequested += delegate
+        {
+            mainWindow.GrabFocus();
+            spawnedMinigames.Remove(minigameInstance);
+            minigameInstance.QueueFree();
+        };
+        GD.Print("CallMinigameSpawn: Spawned minigame '" + minigameID + "'.");
+    }
 
-	public void OnSpawnerTimeout(int x = -1, int y = -1)
-	{
-		if (settingSpawnItems)
-		{
-			spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X, spawnerTimeRange.Y);
-			spawnerTimer.Start();
-			if (spawnedItems.Count >= maxItems)
-			{
-				return;
-			}
-			ICollection<string> keys = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Keys;
-			WeightGroup<string> weightGroup = new WeightGroup<string>();
-			foreach (string item2 in keys)
-			{
-				if (ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item2] is ItemDataRes itemDataRes && !IsBlacklisted(itemDataRes.taggedKinks))
-				{
-					weightGroup.Add(item2, itemDataRes.itemSpawnWeight);
-				}
-			}
-			string item = weightGroup.GetItem(GD.RandRange(0, 10000));
-			ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
-			itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
-			AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
-			if (x == -1 && y == -1)
-			{
-				int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
-				int screenCount = DisplayServer.GetScreenCount();
-				int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
-				for (int i = 0; i < screenCount; i++)
-				{
-					Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
-					if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
-					{
-						y2 = rect2I.Position.Y;
-						break;
-					}
-				}
-				itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
-			}
-			else
-			{
-				itemWindow.Position = new Vector2I(x, y);
-			}
-			spawnedItems.Add(itemWindow);
-		}
-		else
-		{
-			spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X / 4f, spawnerTimeRange.Y / 4f);
-			spawnerTimer.Start();
-		}
-	}
+    public void OnSpawnerTimeout(int x = -1, int y = -1)
+    {
+        if (settingSpawnItems)
+        {
+            spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X, spawnerTimeRange.Y);
+            spawnerTimer.Start();
+            if (spawnedItems.Count >= maxItems)
+            {
+                return;
+            }
+            ICollection<string> keys = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Keys;
+            WeightGroup<string> weightGroup = new WeightGroup<string>();
+            foreach (string item2 in keys)
+            {
+                if (ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item2] is ItemDataRes itemDataRes && !IsBlacklisted(itemDataRes.taggedKinks))
+                {
+                    weightGroup.Add(item2, itemDataRes.itemSpawnWeight);
+                }
+            }
+            string item = weightGroup.GetItem(GD.RandRange(0, 10000));
+            ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
+            itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
+            AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
+            if (x == -1 && y == -1)
+            {
+                int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
+                int screenCount = DisplayServer.GetScreenCount();
+                int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
+                for (int i = 0; i < screenCount; i++)
+                {
+                    Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
+                    if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
+                    {
+                        y2 = rect2I.Position.Y;
+                        break;
+                    }
+                }
+                itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
+            }
+            else
+            {
+                itemWindow.Position = new Vector2I(x, y);
+            }
+            spawnedItems.Add(itemWindow);
+        }
+        else
+        {
+            spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X / 4f, spawnerTimeRange.Y / 4f);
+            spawnerTimer.Start();
+        }
+    }
 
-	public void OnSpawnerActorTimeout()
-	{
-		if (mainCharacter.Visible && settingSpawnActors)
-		{
-			spawnerActorTimer.WaitTime = GD.RandRange(spawnerActorTimerRange.X, spawnerActorTimerRange.Y);
-			spawnerActorTimer.Start();
-			ICollection<string> keys = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER].Keys;
-			WeightGroup<string> weightGroup = new WeightGroup<string>();
-			foreach (string item2 in keys)
-			{
-				Resource resource = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item2];
-				CharacterInfoDataRes charData = resource as CharacterInfoDataRes;
-				if (charData != null && (charData.AITyping != CharacterInfoDataRes.AITypes.COMPANION || (!spawnedCompanions.Any((ActorWindow companion) => companion.characterActor.characterInformation == charData) && spawnedCompanions.Count < companionLimit)) && !IsBlacklisted(charData.taggedKinks))
-				{
-					weightGroup.Add(item2, charData.actorSpawnWeight);
-				}
-			}
-			string item = weightGroup.GetItem(GD.RandRange(0, 10000));
-			CallActorSpawn((CharacterInfoDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item]);
-		}
-		else
-		{
-			spawnerActorTimer.WaitTime = GD.RandRange(spawnerActorTimerRange.X / 4f, spawnerActorTimerRange.Y / 4f);
-			spawnerActorTimer.Start();
-		}
-	}
+    public void OnSpawnerActorTimeout()
+    {
+        if (mainCharacter.Visible && settingSpawnActors)
+        {
+            spawnerActorTimer.WaitTime = GD.RandRange(spawnerActorTimerRange.X, spawnerActorTimerRange.Y);
+            spawnerActorTimer.Start();
+            ICollection<string> keys = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER].Keys;
+            WeightGroup<string> weightGroup = new WeightGroup<string>();
+            foreach (string item2 in keys)
+            {
+                Resource resource = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item2];
+                CharacterInfoDataRes charData = resource as CharacterInfoDataRes;
+                if (charData != null && (charData.AITyping != CharacterInfoDataRes.AITypes.COMPANION || (!spawnedCompanions.Any((ActorWindow companion) => companion.characterActor.characterInformation == charData) && spawnedCompanions.Count < companionLimit)) && !IsBlacklisted(charData.taggedKinks))
+                {
+                    weightGroup.Add(item2, charData.actorSpawnWeight);
+                }
+            }
+            string item = weightGroup.GetItem(GD.RandRange(0, 10000));
+            CallActorSpawn((CharacterInfoDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item]);
+        }
+        else
+        {
+            spawnerActorTimer.WaitTime = GD.RandRange(spawnerActorTimerRange.X / 4f, spawnerActorTimerRange.Y / 4f);
+            spawnerActorTimer.Start();
+        }
+    }
 
-	public void OnAnimationTimerTimeout()
-	{
-		randomAnimationTimer.WaitTime = GD.RandRange(mainCharacter.characterInformation.randomAnimationTimer.X, mainCharacter.characterInformation.randomAnimationTimer.Y);
-		if (mainCharacter.petMainBodyState != 0 || !mainCharacter.Visible)
-		{
-			randomAnimationTimer.WaitTime = GD.RandRange(5.0, 10.0);
-			randomAnimationTimer.Start();
-			return;
-		}
-		randomAnimationTimer.Start();
-		WeightGroup<AnimDataRes> weightGroup = new WeightGroup<AnimDataRes>();
-		foreach (AnimDataRes randomAnimation in mainCharacter.characterInformation.randomAnimations)
-		{
-			if (randomAnimation.animationName == "INVALID_ANIMATION")
-			{
-				GD.PrintErr("Invalid Animation Name in Key, please put a valid animation name!!!");
-				continue;
-			}
-			bool flag = true;
-			foreach (TagDataRes requiredTag in randomAnimation.RequiredTags)
-			{
-				TagDataRes tag = mainCharacter.GetTag(requiredTag.tagName);
-				if (tag == null || (requiredTag.tagAmount > 0 && tag.tagAmount < requiredTag.tagAmount))
-				{
-					flag = false;
-					break;
-				}
-			}
-			bool flag2 = IsBlacklisted(randomAnimation.taggedKinks);
-			if (flag && !flag2)
-			{
-				weightGroup.Add(randomAnimation, randomAnimation.animationAppeanceWeight);
-			}
-		}
-		AnimDataRes item = weightGroup.GetItem(GD.RandRange(0, 10000));
-		if (item.hasTransition)
-		{
-			isWalking = false;
-			mainCharacter.ForceMainBodyStateTransition(item.animationName, (float)GD.RandRange(item.randomTime.X, item.randomTime.Y));
-		}
-		else
-		{
-			isWalking = false;
-			mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, item.animationName, (float)GD.RandRange(item.randomTime.X, item.randomTime.Y));
-		}
-	}
+    public void OnAnimationTimerTimeout()
+    {
+        randomAnimationTimer.WaitTime = GD.RandRange(mainCharacter.characterInformation.randomAnimationTimer.X, mainCharacter.characterInformation.randomAnimationTimer.Y);
+        if (mainCharacter.petMainBodyState != 0 || !mainCharacter.Visible)
+        {
+            randomAnimationTimer.WaitTime = GD.RandRange(5.0, 10.0);
+            randomAnimationTimer.Start();
+            return;
+        }
+        randomAnimationTimer.Start();
+        WeightGroup<AnimDataRes> weightGroup = new WeightGroup<AnimDataRes>();
+        foreach (AnimDataRes randomAnimation in mainCharacter.characterInformation.randomAnimations)
+        {
+            if (randomAnimation.animationName == "INVALID_ANIMATION")
+            {
+                GD.PrintErr("Invalid Animation Name in Key, please put a valid animation name!!!");
+                continue;
+            }
+            bool flag = true;
+            foreach (TagDataRes requiredTag in randomAnimation.RequiredTags)
+            {
+                TagDataRes tag = mainCharacter.GetTag(requiredTag.tagName);
+                if (tag == null || (requiredTag.tagAmount > 0 && tag.tagAmount < requiredTag.tagAmount))
+                {
+                    flag = false;
+                    break;
+                }
+            }
+            bool flag2 = IsBlacklisted(randomAnimation.taggedKinks);
+            if (flag && !flag2)
+            {
+                weightGroup.Add(randomAnimation, randomAnimation.animationAppeanceWeight);
+            }
+        }
+        AnimDataRes item = weightGroup.GetItem(GD.RandRange(0, 10000));
+        if (item.hasTransition)
+        {
+            isWalking = false;
+            mainCharacter.ForceMainBodyStateTransition(item.animationName, (float)GD.RandRange(item.randomTime.X, item.randomTime.Y));
+        }
+        else
+        {
+            isWalking = false;
+            mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, item.animationName, (float)GD.RandRange(item.randomTime.X, item.randomTime.Y));
+        }
+    }
 
-	public void OnPassivePlayTimerTimeout()
-	{
-		if (settingPassivePlayMode)
-		{
-			passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
-		}
-		else
-		{
-			passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOffRange.X, passivePlayTimerOffRange.Y);
-		}
-		if ((mainCharacter.petMainBodyState != 0 && mainCharacter.petMainBodyState != Character.MainBodyStates.Walk) || isWalkingToTargetPosition || spawnedItems.Count() == 0 || mainCharacter.isDangling)
-		{
-			passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
-			passivePlayTimer.Start();
-			return;
-		}
-		passivePlayTimer.Start();
-		if (TrySetTargetToItem())
-		{
-			if (Mathf.Abs(mainWindow.Position.X - GetResolvedTargetX()) <= 5)
-			{
-				ReachedItemTarget();
-			}
-			else
-			{
-				StartAutoWalkToTarget();
-			}
-		}
-	}
+    public void OnPassivePlayTimerTimeout()
+    {
+        if (settingPassivePlayMode)
+        {
+            passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
+        }
+        else
+        {
+            passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOffRange.X, passivePlayTimerOffRange.Y);
+        }
+        if ((mainCharacter.petMainBodyState != 0 && mainCharacter.petMainBodyState != Character.MainBodyStates.Walk) || isWalkingToTargetPosition || spawnedItems.Count() == 0 || mainCharacter.isDangling)
+        {
+            passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
+            passivePlayTimer.Start();
+            return;
+        }
+        passivePlayTimer.Start();
+        if (TrySetTargetToItem())
+        {
+            if (Mathf.Abs(mainWindow.Position.X - GetResolvedTargetX()) <= 5)
+            {
+                ReachedItemTarget();
+            }
+            else
+            {
+                StartAutoWalkToTarget();
+            }
+        }
+    }
 
-	public void OnRandomDialogueTimerTimeout()
-	{
-		randomDialogueTimer.WaitTime = GD.RandRange(mainCharacter.characterInformation.randomDialogueTimer.X, mainCharacter.characterInformation.randomDialogueTimer.Y);
-		if (!mainCharacter.Visible || isInConvo || settingRemoveConvos || isThrown)
-		{
-			randomDialogueTimer.WaitTime = GD.RandRange(5.0, 10.0);
-			randomDialogueTimer.Start();
-			return;
-		}
-		randomDialogueTimer.Start();
-		ClearAllAttachments();
-		ConvoDataRes convoDataRes = PickConvo(mainCharacter.characterInformation.randomTexts);
-		if (convoDataRes != null)
-		{
-			dialogueStack = convoDataRes.convoStack.Duplicate(deep: true);
-			PopDialogueInStack(skipTimer: true);
-			isInConvo = true;
-		}
-	}
+    public void OnRandomDialogueTimerTimeout()
+    {
+        randomDialogueTimer.WaitTime = GD.RandRange(mainCharacter.characterInformation.randomDialogueTimer.X, mainCharacter.characterInformation.randomDialogueTimer.Y);
+        if (!mainCharacter.Visible || isInConvo || settingRemoveConvos || isThrown)
+        {
+            randomDialogueTimer.WaitTime = GD.RandRange(5.0, 10.0);
+            randomDialogueTimer.Start();
+            return;
+        }
+        randomDialogueTimer.Start();
+        ClearAllAttachments();
+        ConvoDataRes convoDataRes = PickConvo(mainCharacter.characterInformation.randomTexts);
+        if (convoDataRes != null)
+        {
+            dialogueStack = convoDataRes.convoStack.Duplicate(deep: true);
+            PopDialogueInStack(skipTimer: true);
+            isInConvo = true;
+        }
+    }
 
-	public void ClearAllAttachments()
-	{
-		foreach (AttachObjWindow spawnedAttachment in spawnedAttachments)
-		{
-			if (GodotObject.IsInstanceValid(spawnedAttachment))
-			{
-				spawnedAttachment.QueueFree();
-			}
-		}
-		spawnedAttachments.Clear();
-		dialogueStack.Clear();
-		foreach (ActorWindow spawnedCompanion in spawnedCompanions)
-		{
-			if (GodotObject.IsInstanceValid(spawnedCompanion))
-			{
-				spawnedCompanion.inUse = false;
-				spawnedCompanion.inUseByAttachment = false;
-				spawnedCompanion.Visible = true;
-			}
-		}
-		mainCharacter.Visible = true;
-	}
+    public void ClearAllAttachments()
+    {
+        foreach (AttachObjWindow spawnedAttachment in spawnedAttachments)
+        {
+            if (GodotObject.IsInstanceValid(spawnedAttachment))
+            {
+                spawnedAttachment.QueueFree();
+            }
+        }
+        spawnedAttachments.Clear();
+        dialogueStack.Clear();
+        foreach (ActorWindow spawnedCompanion in spawnedCompanions)
+        {
+            if (GodotObject.IsInstanceValid(spawnedCompanion))
+            {
+                spawnedCompanion.inUse = false;
+                spawnedCompanion.inUseByAttachment = false;
+                spawnedCompanion.Visible = true;
+            }
+        }
+        mainCharacter.Visible = true;
+    }
 
-	public void ForceDropCharacter()
-	{
-		selected = false;
-		SomethingHasBeenGrabbed = false;
-		isWalking = false;
-		mainCharacter.Grabbed(isGrabbed: false);
-	}
+    public void ForceDropCharacter()
+    {
+        selected = false;
+        SomethingHasBeenGrabbed = false;
+        isWalking = false;
+        mainCharacter.Grabbed(isGrabbed: false);
+    }
 
-	public bool TrySetTargetToItem(ItemTargetMode mode = ItemTargetMode.RANDOM, Array<ItemWindow> possibleArray = null)
-	{
-		if (spawnedItems == null || spawnedItems.Count == 0)
-		{
-			return false;
-		}
-		List<ItemWindow> list = (from item in spawnedItems
-			where GodotObject.IsInstanceValid(item)
-			where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
-			where !item.itemObject.itemInformation.NoPassivePickup
-			where item.Visible
-			select item).ToList();
-		if (possibleArray != null)
-		{
-			list.Clear();
-			list = (from item in possibleArray
-				where GodotObject.IsInstanceValid(item)
-				where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
-				where !item.itemObject.itemInformation.NoPassivePickup
-				where item.Visible
-				select item).ToList();
-		}
-		if (list.Count == 0)
-		{
-			return false;
-		}
-		ItemWindow itemWindow = null;
-		int currentCenterX = mainWindow.Position.X + mainCharacter.trueSize.X / 2;
-		switch (mode)
-		{
-		case ItemTargetMode.RANDOM:
-			itemWindow = list[GD.RandRange(0, list.Count - 1)];
-			break;
-		case ItemTargetMode.CLOSEST:
-			itemWindow = list.OrderBy((ItemWindow item) => Mathf.Abs(item.Position.X - currentCenterX)).First();
-			break;
-		case ItemTargetMode.FARTHEST:
-			itemWindow = list.OrderByDescending((ItemWindow item) => Mathf.Abs(item.Position.X - currentCenterX)).First();
-			break;
-		}
-		if (itemWindow == null)
-		{
-			return false;
-		}
-		walkTargetItem = itemWindow;
-		targetX = GetResolvedTargetX();
-		return true;
-	}
+    public bool TrySetTargetToItem(ItemTargetMode mode = ItemTargetMode.RANDOM, Array<ItemWindow> possibleArray = null)
+    {
+        if (spawnedItems == null || spawnedItems.Count == 0)
+        {
+            return false;
+        }
+        List<ItemWindow> list = (from item in spawnedItems
+            where GodotObject.IsInstanceValid(item)
+            where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
+            where !item.itemObject.itemInformation.NoPassivePickup
+            where item.Visible
+            select item).ToList();
+        if (possibleArray != null)
+        {
+            list.Clear();
+            list = (from item in possibleArray
+                where GodotObject.IsInstanceValid(item)
+                where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
+                where !item.itemObject.itemInformation.NoPassivePickup
+                where item.Visible
+                select item).ToList();
+        }
+        if (list.Count == 0)
+        {
+            return false;
+        }
+        ItemWindow itemWindow = null;
+        int currentCenterX = mainWindow.Position.X + mainCharacter.trueSize.X / 2;
+        switch (mode)
+        {
+        case ItemTargetMode.RANDOM:
+            itemWindow = list[GD.RandRange(0, list.Count - 1)];
+            break;
+        case ItemTargetMode.CLOSEST:
+            itemWindow = list.OrderBy((ItemWindow item) => Mathf.Abs(item.Position.X - currentCenterX)).First();
+            break;
+        case ItemTargetMode.FARTHEST:
+            itemWindow = list.OrderByDescending((ItemWindow item) => Mathf.Abs(item.Position.X - currentCenterX)).First();
+            break;
+        }
+        if (itemWindow == null)
+        {
+            return false;
+        }
+        walkTargetItem = itemWindow;
+        targetX = GetResolvedTargetX();
+        return true;
+    }
 
-	public bool IsBlacklisted(SaveHandler.Kinks taggedKink)
-	{
-		return settingBlacklistedContent.Contains(taggedKink);
-	}
+    public bool IsBlacklisted(SaveHandler.Kinks taggedKink)
+    {
+        return settingBlacklistedContent.Contains(taggedKink);
+    }
 
-	public bool IsBlacklisted(Array<SaveHandler.Kinks> taggedContent)
-	{
-		foreach (SaveHandler.Kinks item in taggedContent)
-		{
-			if (settingBlacklistedContent.Contains(item))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
+    public bool IsBlacklisted(Array<SaveHandler.Kinks> taggedContent)
+    {
+        foreach (SaveHandler.Kinks item in taggedContent)
+        {
+            if (settingBlacklistedContent.Contains(item))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 
-	public DialogueDataRes PickDialogue(IEnumerable<DialogueDataRes> pool)
-	{
-		WeightGroup<DialogueDataRes> weightGroup = new WeightGroup<DialogueDataRes>();
-		foreach (DialogueDataRes item in pool)
-		{
-			if (Instance.IsBlacklisted(item.taggedKinks))
-			{
-				continue;
-			}
-			bool flag = false;
-			foreach (TagDataRes requiredTag in item.RequiredTags)
-			{
-				TagDataRes tag = Instance.mainCharacter.GetTag(requiredTag.tagName);
-				if (tag == null || (requiredTag.tagAmount != 0 && tag.tagAmount < requiredTag.tagAmount))
-				{
-					flag = true;
-					break;
-				}
-			}
-			if (!flag)
-			{
-				weightGroup.Add(item, item.dialogueAppeanceWeight);
-			}
-		}
-		if (weightGroup.Count == 0)
-		{
-			return null;
-		}
-		return weightGroup.GetItem(GD.RandRange(0, 10000));
-	}
+    public DialogueDataRes PickDialogue(IEnumerable<DialogueDataRes> pool)
+    {
+        WeightGroup<DialogueDataRes> weightGroup = new WeightGroup<DialogueDataRes>();
+        foreach (DialogueDataRes item in pool)
+        {
+            if (Instance.IsBlacklisted(item.taggedKinks))
+            {
+                continue;
+            }
+            bool flag = false;
+            foreach (TagDataRes requiredTag in item.RequiredTags)
+            {
+                TagDataRes tag = Instance.mainCharacter.GetTag(requiredTag.tagName);
+                if (tag == null || (requiredTag.tagAmount != 0 && tag.tagAmount < requiredTag.tagAmount))
+                {
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag)
+            {
+                weightGroup.Add(item, item.dialogueAppeanceWeight);
+            }
+        }
+        if (weightGroup.Count == 0)
+        {
+            return null;
+        }
+        return weightGroup.GetItem(GD.RandRange(0, 10000));
+    }
 
-	public ConvoDataRes PickConvo(IEnumerable<ConvoDataRes> pool, CharacterInfoDataRes subActorSpeaker = null)
-	{
-		WeightGroup<ConvoDataRes> weightGroup = new WeightGroup<ConvoDataRes>();
-		foreach (ConvoDataRes item in pool)
-		{
-			if (Instance.IsBlacklisted(item.taggedKinks))
-			{
-				continue;
-			}
-			bool flag = false;
-			foreach (TagDataRes requiredTag in item.RequiredTags)
-			{
-				TagDataRes tag = Instance.mainCharacter.GetTag(requiredTag.tagName);
-				if (tag == null || (requiredTag.tagAmount != 0 && tag.tagAmount < requiredTag.tagAmount))
-				{
-					flag = true;
-					break;
-				}
-			}
-			if (flag)
-			{
-				continue;
-			}
-			bool flag2 = false;
-			foreach (DialogueDataRes item2 in item.convoStack)
-			{
-				if (string.IsNullOrEmpty(item2.speakingActorID) || item2.speakingActorID == mainCharacter.characterInformation._itemID)
-				{
-					continue;
-				}
-				bool flag3 = false;
-				foreach (ActorWindow spawnedActor in spawnedActors)
-				{
-					if (GodotObject.IsInstanceValid(spawnedActor) && spawnedActor.characterActor.characterInformation == ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item2.speakingActorID])
-					{
-						flag3 = true;
-						break;
-					}
-				}
-				if (!flag3)
-				{
-					flag2 = true;
-					break;
-				}
-			}
-			if (!flag2)
-			{
-				weightGroup.Add(item, item.Weight);
-			}
-		}
-		if (weightGroup.Count == 0)
-		{
-			return null;
-		}
-		return weightGroup.GetItem(GD.RandRange(0, 10000));
-	}
+    public ConvoDataRes PickConvo(IEnumerable<ConvoDataRes> pool, CharacterInfoDataRes subActorSpeaker = null)
+    {
+        WeightGroup<ConvoDataRes> weightGroup = new WeightGroup<ConvoDataRes>();
+        foreach (ConvoDataRes item in pool)
+        {
+            if (Instance.IsBlacklisted(item.taggedKinks))
+            {
+                continue;
+            }
+            bool flag = false;
+            foreach (TagDataRes requiredTag in item.RequiredTags)
+            {
+                TagDataRes tag = Instance.mainCharacter.GetTag(requiredTag.tagName);
+                if (tag == null || (requiredTag.tagAmount != 0 && tag.tagAmount < requiredTag.tagAmount))
+                {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag)
+            {
+                continue;
+            }
+            bool flag2 = false;
+            foreach (DialogueDataRes item2 in item.convoStack)
+            {
+                if (string.IsNullOrEmpty(item2.speakingActorID) || item2.speakingActorID == mainCharacter.characterInformation._itemID)
+                {
+                    continue;
+                }
+                bool flag3 = false;
+                foreach (ActorWindow spawnedActor in spawnedActors)
+                {
+                    if (GodotObject.IsInstanceValid(spawnedActor) && spawnedActor.characterActor.characterInformation == ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.CHARACTER][item2.speakingActorID])
+                    {
+                        flag3 = true;
+                        break;
+                    }
+                }
+                if (!flag3)
+                {
+                    flag2 = true;
+                    break;
+                }
+            }
+            if (!flag2)
+            {
+                weightGroup.Add(item, item.Weight);
+            }
+        }
+        if (weightGroup.Count == 0)
+        {
+            return null;
+        }
+        return weightGroup.GetItem(GD.RandRange(0, 10000));
+    }
 
-	private void FollowMouse(bool Unlocked = false)
-	{
-		Vector2I mousePos = MobileMousePos();
-		if (!Unlocked)
-		{
-			mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX((int)((float)mousePos.X + mouseOffset.X), mainCharacter.trueSize.X), screenDataHandler.taskbarPos);
-			return;
-		}
-		int x = screenDataHandler.ClampAcrossAllScreensX((int)((float)mousePos.X + mouseOffset.X), mainCharacter.trueSize.X);
-		int verticalAdjacentTaskbarY = screenDataHandler.GetVerticalAdjacentTaskbarY(mousePos, mainCharacter.trueSize);
-		int y = ((verticalAdjacentTaskbarY >= 0) ? verticalAdjacentTaskbarY : screenDataHandler.ClampAcrossAllScreensY((int)((float)mousePos.Y + mouseOffset.Y)));
-		mainWindow.Position = new Vector2I(x, y);
-	}
+    private void FollowMouse(bool Unlocked = false)
+    {
+        Vector2I mousePos = MobileMousePos();
+        if (_isMobile)
+        {
+            Vector2I screenSize = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
+            Vector2 newPos = (Vector2)mousePos + mouseOffset;
+            newPos.X = Mathf.Clamp(newPos.X, 0f, (float)(screenSize.X - mainCharacter.trueSize.X));
+            newPos.Y = Mathf.Clamp(newPos.Y, 0f, (float)(screenSize.Y - mainCharacter.trueSize.Y));
+            Position = newPos;
+            return;
+        }
+        if (!Unlocked)
+        {
+            mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX((int)((float)mousePos.X + mouseOffset.X), mainCharacter.trueSize.X), screenDataHandler.taskbarPos);
+            return;
+        }
+        int x = screenDataHandler.ClampAcrossAllScreensX((int)((float)mousePos.X + mouseOffset.X), mainCharacter.trueSize.X);
+        int verticalAdjacentTaskbarY = screenDataHandler.GetVerticalAdjacentTaskbarY(mousePos, mainCharacter.trueSize);
+        int y = ((verticalAdjacentTaskbarY >= 0) ? verticalAdjacentTaskbarY : screenDataHandler.ClampAcrossAllScreensY((int)((float)mousePos.Y + mouseOffset.Y)));
+        mainWindow.Position = new Vector2I(x, y);
+    }
 
-	private void MovePet()
-	{
-		if (Input.IsActionPressed("Move") && !SomethingHasBeenGrabbed && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
-		{
-			selected = true;
-			SomethingHasBeenGrabbed = true;
-			mouseOffset = base.Position - (Vector2)MobileMousePos();
-			AbortActivePickup();
-			isWalking = false;
-			mainCharacter.Grabbed(isGrabbed: true);
-		}
-		if (Input.IsActionJustReleased("Move") && selected)
-		{
-			selected = false;
-			SomethingHasBeenGrabbed = false;
-			isWalking = false;
-			mainCharacter.Grabbed(isGrabbed: false);
-			if (settingWindowThrowPhysics)
-			{
-				windowVelocity = mainCharacter.mouseVelocity * mouseVelocityScaler;
-				windowVelocity.Y = Mathf.Clamp(windowVelocity.Y, -1600f, float.MaxValue);
-				isThrown = true;
-				mainCharacter.BeginThrow(windowVelocity);
-			}
-		}
-	}
+    private void MovePet()
+    {
+        if (Input.IsActionPressed("Move") && !SomethingHasBeenGrabbed && GetThinnerCollisionBox().HasPoint(MobileMousePos()))
+        {
+            selected = true;
+            SomethingHasBeenGrabbed = true;
+            mouseOffset = base.Position - (Vector2)MobileMousePos();
+            AbortActivePickup();
+            isWalking = false;
+            mainCharacter.Grabbed(isGrabbed: true);
+        }
+        if (Input.IsActionJustReleased("Move") && selected)
+        {
+            selected = false;
+            SomethingHasBeenGrabbed = false;
+            isWalking = false;
+            mainCharacter.Grabbed(isGrabbed: false);
+            if (settingWindowThrowPhysics)
+            {
+                windowVelocity = mainCharacter.mouseVelocity * mouseVelocityScaler;
+                windowVelocity.Y = Mathf.Clamp(windowVelocity.Y, -1600f, float.MaxValue);
+                isThrown = true;
+                mainCharacter.BeginThrow(windowVelocity);
+            }
+        }
+    }
 
-	public void TweenGrabRelease()
-	{
-		grabReleaseTween = GetTree().CreateTween();
-		grabReleaseTween.TweenInterval(0.5);
-		grabReleaseTween.TweenCallback(Callable.From(OnGrabReleased));
-	}
+    public void TweenGrabRelease()
+    {
+        grabReleaseTween = GetTree().CreateTween();
+        grabReleaseTween.TweenInterval(0.5);
+        grabReleaseTween.TweenCallback(Callable.From(OnGrabReleased));
+    }
 
-	private void OnGrabReleased()
-	{
-		SomethingHasBeenGrabbed = false;
-	}
+    private void OnGrabReleased()
+    {
+        SomethingHasBeenGrabbed = false;
+    }
 
-	private int GetResolvedTargetX()
-	{
-		if (walkTargetItem != null && GodotObject.IsInstanceValid(walkTargetItem))
-		{
-			return Mathf.Clamp(walkTargetItem.Position.X + walkTargetItem.Size.X - mainCharacter.trueSize.X / 4, screenDataHandler.EffectiveLeftX, screenDataHandler.EffectiveRightX - mainCharacter.trueSize.X);
-		}
-		return targetX;
-	}
+    private int GetResolvedTargetX()
+    {
+        if (walkTargetItem != null && GodotObject.IsInstanceValid(walkTargetItem))
+        {
+            return Mathf.Clamp(walkTargetItem.Position.X + walkTargetItem.Size.X - mainCharacter.trueSize.X / 4, screenDataHandler.EffectiveLeftX, screenDataHandler.EffectiveRightX - mainCharacter.trueSize.X);
+        }
+        return targetX;
+    }
 
-	private void StartAutoWalkToTarget()
-	{
-		isWalkingToTargetPosition = true;
-		isWalking = true;
-		UpdateWalkDirection();
-		mainCharacter.ForceMainBodyState(Character.MainBodyStates.Walk, "Walk");
-		mainCharacter.mainBodyTimer.WaitTime = 1000.0;
-		mainCharacter.mainBodyTimer.Start();
-	}
+    private void StartAutoWalkToTarget()
+    {
+        isWalkingToTargetPosition = true;
+        isWalking = true;
+        UpdateWalkDirection();
+        mainCharacter.ForceMainBodyState(Character.MainBodyStates.Walk, "Walk");
+        mainCharacter.mainBodyTimer.WaitTime = 1000.0;
+        mainCharacter.mainBodyTimer.Start();
+    }
 
-	private void UpdateWalkDirection()
-	{
-		int num = ((GetResolvedTargetX() > mainWindow.Position.X) ? 1 : (-1));
-		if (num != walkDirection)
-		{
-			walkDirection = num;
-			mainCharacter.FlipHSpriteTo(walkDirection > 0);
-		}
-	}
+    private void UpdateWalkDirection()
+    {
+        int num = ((GetResolvedTargetX() > mainWindow.Position.X) ? 1 : (-1));
+        if (num != walkDirection)
+        {
+            walkDirection = num;
+            mainCharacter.FlipHSpriteTo(walkDirection > 0);
+        }
+    }
 
-	private void Walk(double delta)
-	{
-		Vector2I position = mainWindow.Position;
-		if (isWalkingToTargetPosition)
-		{
-			if (walkTargetItem != null)
-			{
-				if (!GodotObject.IsInstanceValid(walkTargetItem))
-				{
-					ClearItemTarget();
-					return;
-				}
-				UpdateWalkDirection();
-			}
-			int resolvedTargetX = GetResolvedTargetX();
-			int num = (int)((double)position.X + 250.0 * delta * (double)walkDirection);
-			if ((walkDirection > 0) ? (num >= resolvedTargetX) : (num <= resolvedTargetX))
-			{
-				num = resolvedTargetX;
-				ReachedItemTarget();
-			}
-			position.X = num;
-			mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X), screenDataHandler.ClampAcrossAllScreensY(position.Y));
-		}
-		else
-		{
-			int effectiveLeftX = screenDataHandler.EffectiveLeftX;
-			int num2 = screenDataHandler.EffectiveRightX - mainCharacter.trueSize.X;
-			int num3 = (int)((double)position.X + 250.0 * delta * (double)walkDirection);
-			if (num3 < effectiveLeftX)
-			{
-				num3 = effectiveLeftX;
-				walkDirection = 1;
-				mainCharacter.FlipHSpriteTo(FlipH: true);
-			}
-			else if (num3 > num2)
-			{
-				num3 = num2;
-				walkDirection = -1;
-				mainCharacter.FlipHSpriteTo(FlipH: false);
-			}
-			position.X = num3;
-			mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X), screenDataHandler.ClampAcrossAllScreensY(position.Y));
-		}
-	}
+    private void Walk(double delta)
+    {
+        Vector2I position = (_isMobile) ? (Vector2I)Position : mainWindow.Position;
+        if (isWalkingToTargetPosition)
+        {
+            if (walkTargetItem != null)
+            {
+                if (!GodotObject.IsInstanceValid(walkTargetItem))
+                {
+                    ClearItemTarget();
+                    return;
+                }
+                UpdateWalkDirection();
+            }
+            int resolvedTargetX = GetResolvedTargetX();
+            int num = (int)((double)position.X + 250.0 * delta * (double)walkDirection);
+            if ((walkDirection > 0) ? (num >= resolvedTargetX) : (num <= resolvedTargetX))
+            {
+                num = resolvedTargetX;
+                ReachedItemTarget();
+            }
+            position.X = num;
+            if (_isMobile) Position = new Vector2(position.X, Position.Y);
+            else mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X), screenDataHandler.ClampAcrossAllScreensY(position.Y));
+        }
+        else
+        {
+            int effectiveLeftX = screenDataHandler.EffectiveLeftX;
+            int num2 = screenDataHandler.EffectiveRightX - mainCharacter.trueSize.X;
+            int num3 = (int)((double)position.X + 250.0 * delta * (double)walkDirection);
+            if (num3 < effectiveLeftX)
+            {
+                num3 = effectiveLeftX;
+                walkDirection = 1;
+                mainCharacter.FlipHSpriteTo(FlipH: true);
+            }
+            else if (num3 > num2)
+            {
+                num3 = num2;
+                walkDirection = -1;
+                mainCharacter.FlipHSpriteTo(FlipH: false);
+            }
+            position.X = num3;
+            if (_isMobile) Position = new Vector2(position.X, Position.Y);
+            else mainWindow.Position = new Vector2I(screenDataHandler.ClampAcrossAllScreensX(position.X, mainCharacter.trueSize.X), screenDataHandler.ClampAcrossAllScreensY(position.Y));
+        }
+    }
 
-	private void ReachedItemTarget()
-	{
-		if (inPickup)
-		{
-			return;
-		}
-		if (walkTargetItem == null || !GodotObject.IsInstanceValid(walkTargetItem) || walkTargetItem.CurrentlyPickedUp)
-		{
-			passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
-			passivePlayTimer.Start();
-			ClearItemTarget();
-			return;
-		}
-		if (settingPassivePlayMode)
-		{
-			if (storedItem != null && GodotObject.IsInstanceValid(storedItem))
-			{
-				ItemWindow itemA = storedItem;
-				ItemWindow itemB = walkTargetItem;
-				Vector2I spawnPos = new Vector2I(mainWindow.Position.X + mainCharacter.trueSize.X / 2, mainWindow.Position.Y + mainCharacter.trueSize.Y / 2);
-				CombinationDataRes combinationDataRes = null;
-				foreach (CombinationDataRes possibleCombination in itemA.itemObject.itemInformation.possibleCombinations)
-				{
-					if (possibleCombination.requiredItem == itemB.itemObject.itemInformation && possibleCombination.outputItem != null && !possibleCombination.outputItem.NoPassivePickup)
-					{
-						combinationDataRes = possibleCombination;
-						break;
-					}
-				}
-				if (combinationDataRes == null)
-				{
-					foreach (CombinationDataRes possibleCombination2 in itemB.itemObject.itemInformation.possibleCombinations)
-					{
-						if (possibleCombination2.requiredItem == itemA.itemObject.itemInformation && possibleCombination2.outputItem != null && !possibleCombination2.outputItem.NoPassivePickup)
-						{
-							combinationDataRes = possibleCombination2;
-							break;
-						}
-					}
-				}
-				if (combinationDataRes != null)
-				{
-					ItemDataRes outputItem = combinationDataRes.outputItem;
-					inPickup = true;
-					itemB.MousePassthrough = true;
-					mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
-					{
-						new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
-						{
-							if (!GodotObject.IsInstanceValid(itemB) || !mainCharacter.Visible)
-							{
-								ReleaseItem(itemB);
-								ClearItemTarget();
-							}
-							else
-							{
-								itemB.CurrentlyPickedUp = true;
-							}
-						}),
-						new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
-						{
-							if (!GodotObject.IsInstanceValid(itemB) || !mainCharacter.Visible)
-							{
-								storedItem.CurrentlyPickedUp = false;
-								storedItem.MousePassthrough = false;
-								storedItem.Position = spawnPos;
-								storedItem = null;
-								ReleaseItem(itemB);
-								ClearItemTarget();
-							}
-							else
-							{
-								spawnedItems.Remove(itemA);
-								itemA.QueueFree();
-								spawnedItems.Remove(itemB);
-								itemB.QueueFree();
-								storedItem = null;
-								CallItemSpawn(outputItem, spawnPos);
-								ItemWindow itemWindow = spawnedItems[spawnedItems.Count - 1];
-								itemWindow.UsePickedUpItem();
-								if (!itemWindow.itemObject.itemInformation.isReusable)
-								{
-									spawnedItems.Remove(itemWindow);
-									itemWindow.QueueFree();
-								}
-								ClearItemTarget(usingItem: true);
-							}
-						})
-					});
-					return;
-				}
-				storedItem.CurrentlyPickedUp = false;
-				storedItem.Position = spawnPos;
-				storedItem = null;
-				inPickup = true;
-				itemB.MousePassthrough = true;
-				mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
-				{
-					new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup"),
-					new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
-					{
-						if (GodotObject.IsInstanceValid(itemB))
-						{
-							storedItem = itemB;
-							storedItem.CurrentlyPickedUp = true;
-						}
-						ClearItemTarget();
-					})
-				});
-				return;
-			}
-			ItemWindow capturedTarget2 = walkTargetItem;
-			Array<ItemWindow> possibleCombinations = new Array<ItemWindow>();
-			foreach (ItemWindow other in spawnedItems)
-			{
-				if (other != capturedTarget2 && (capturedTarget2.itemObject.itemInformation.possibleCombinations.Any((CombinationDataRes combo) => combo.outputItem != null && !combo.outputItem.NoPassivePickup && combo.requiredItem == other.itemObject.itemInformation) || other.itemObject.itemInformation.possibleCombinations.Any((CombinationDataRes combo) => combo.outputItem != null && !combo.outputItem.NoPassivePickup && combo.requiredItem == capturedTarget2.itemObject.itemInformation)))
-				{
-					possibleCombinations.Add(other);
-				}
-			}
-			inPickup = true;
-			capturedTarget2.MousePassthrough = true;
-			mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
-			{
-				new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
-				{
-					if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
-					{
-						ReleaseItem(capturedTarget2);
-						ClearItemTarget();
-					}
-					else
-					{
-						capturedTarget2.CurrentlyPickedUp = true;
-					}
-				}),
-				new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
-				{
-					if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
-					{
-						ClearItemTarget();
-					}
-					else if (possibleCombinations.Count() > 0)
-					{
-						storedItem = capturedTarget2;
-						storedItem.CurrentlyPickedUp = true;
-						isWalking = false;
-						isWalkingToTargetPosition = false;
-						walkTargetItem = null;
-						TrySetTargetToItem(ItemTargetMode.RANDOM, possibleCombinations);
-						StartAutoWalkToTarget();
-						inPickup = false;
-					}
-					else if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
-					{
-						ClearItemTarget();
-					}
-					else
-					{
-						capturedTarget2.UsePickedUpItem();
-						if (!capturedTarget2.itemObject.itemInformation.isReusable)
-						{
-							spawnedItems.Remove(capturedTarget2);
-							capturedTarget2.QueueFree();
-						}
-						else
-						{
-							ReleaseItem(capturedTarget2);
-						}
-						ClearItemTarget(usingItem: true);
-					}
-				})
-			});
-			return;
-		}
-		ItemWindow capturedTarget = walkTargetItem;
-		inPickup = true;
-		capturedTarget.MousePassthrough = true;
-		mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
-		{
-			new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
-			{
-				if (!GodotObject.IsInstanceValid(capturedTarget) || !mainCharacter.Visible)
-				{
-					ClearItemTarget();
-				}
-				else
-				{
-					capturedTarget.CurrentlyPickedUp = true;
-				}
-			}),
-			new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
-			{
-				if (!GodotObject.IsInstanceValid(capturedTarget) || !mainCharacter.Visible)
-				{
-					ClearItemTarget();
-				}
-				else
-				{
-					capturedTarget.UsePickedUpItem();
-					if (!capturedTarget.itemObject.itemInformation.isReusable)
-					{
-						spawnedItems.Remove(capturedTarget);
-						capturedTarget.QueueFree();
-					}
-					ClearItemTarget(usingItem: true);
-				}
-			})
-		});
-	}
+    private void ReachedItemTarget()
+    {
+        if (inPickup)
+        {
+            return;
+        }
+        if (walkTargetItem == null || !GodotObject.IsInstanceValid(walkTargetItem) || walkTargetItem.CurrentlyPickedUp)
+        {
+            passivePlayTimer.WaitTime = GD.RandRange(passivePlayTimerOnRange.X, passivePlayTimerOnRange.Y);
+            passivePlayTimer.Start();
+            ClearItemTarget();
+            return;
+        }
+        if (settingPassivePlayMode)
+        {
+            if (storedItem != null && GodotObject.IsInstanceValid(storedItem))
+            {
+                ItemWindow itemA = storedItem;
+                ItemWindow itemB = walkTargetItem;
+                Vector2I spawnPos = new Vector2I(mainWindow.Position.X + mainCharacter.trueSize.X / 2, mainWindow.Position.Y + mainCharacter.trueSize.Y / 2);
+                CombinationDataRes combinationDataRes = null;
+                foreach (CombinationDataRes possibleCombination in itemA.itemObject.itemInformation.possibleCombinations)
+                {
+                    if (possibleCombination.requiredItem == itemB.itemObject.itemInformation && possibleCombination.outputItem != null && !possibleCombination.outputItem.NoPassivePickup)
+                    {
+                        combinationDataRes = possibleCombination;
+                        break;
+                    }
+                }
+                if (combinationDataRes == null)
+                {
+                    foreach (CombinationDataRes possibleCombination2 in itemB.itemObject.itemInformation.possibleCombinations)
+                    {
+                        if (possibleCombination2.requiredItem == itemA.itemObject.itemInformation && possibleCombination2.outputItem != null && !possibleCombination2.outputItem.NoPassivePickup)
+                        {
+                            combinationDataRes = possibleCombination2;
+                            break;
+                        }
+                    }
+                }
+                if (combinationDataRes != null)
+                {
+                    ItemDataRes outputItem = combinationDataRes.outputItem;
+                    inPickup = true;
+                    itemB.MousePassthrough = true;
+                    mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
+                    {
+                        new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
+                        {
+                            if (!GodotObject.IsInstanceValid(itemB) || !mainCharacter.Visible)
+                            {
+                                ReleaseItem(itemB);
+                                ClearItemTarget();
+                            }
+                            else
+                            {
+                                itemB.CurrentlyPickedUp = true;
+                            }
+                        }),
+                        new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
+                        {
+                            if (!GodotObject.IsInstanceValid(itemB) || !mainCharacter.Visible)
+                            {
+                                storedItem.CurrentlyPickedUp = false;
+                                storedItem.MousePassthrough = false;
+                                storedItem.Position = spawnPos;
+                                storedItem = null;
+                                ReleaseItem(itemB);
+                                ClearItemTarget();
+                            }
+                            else
+                            {
+                                spawnedItems.Remove(itemA);
+                                itemA.QueueFree();
+                                spawnedItems.Remove(itemB);
+                                itemB.QueueFree();
+                                storedItem = null;
+                                CallItemSpawn(outputItem, spawnPos);
+                                ItemWindow itemWindow = spawnedItems[spawnedItems.Count - 1];
+                                itemWindow.UsePickedUpItem();
+                                if (!itemWindow.itemObject.itemInformation.isReusable)
+                                {
+                                    spawnedItems.Remove(itemWindow);
+                                    itemWindow.QueueFree();
+                                }
+                                ClearItemTarget(usingItem: true);
+                            }
+                        })
+                    });
+                    return;
+                }
+                storedItem.CurrentlyPickedUp = false;
+                storedItem.Position = spawnPos;
+                storedItem = null;
+                inPickup = true;
+                itemB.MousePassthrough = true;
+                mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
+                {
+                    new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup"),
+                    new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
+                    {
+                        if (GodotObject.IsInstanceValid(itemB))
+                        {
+                            storedItem = itemB;
+                            storedItem.CurrentlyPickedUp = true;
+                        }
+                        ClearItemTarget();
+                    })
+                });
+                return;
+            }
+            ItemWindow capturedTarget2 = walkTargetItem;
+            Array<ItemWindow> possibleCombinations = new Array<ItemWindow>();
+            foreach (ItemWindow other in spawnedItems)
+            {
+                if (other != capturedTarget2 && (capturedTarget2.itemObject.itemInformation.possibleCombinations.Any((CombinationDataRes combo) => combo.outputItem != null && !combo.outputItem.NoPassivePickup && combo.requiredItem == other.itemObject.itemInformation) || other.itemObject.itemInformation.possibleCombinations.Any((CombinationDataRes combo) => combo.outputItem != null && !combo.outputItem.NoPassivePickup && combo.requiredItem == capturedTarget2.itemObject.itemInformation)))
+                {
+                    possibleCombinations.Add(other);
+                }
+            }
+            inPickup = true;
+            capturedTarget2.MousePassthrough = true;
+            mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
+            {
+                new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
+                {
+                    if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
+                    {
+                        ReleaseItem(capturedTarget2);
+                        ClearItemTarget();
+                    }
+                    else
+                    {
+                        capturedTarget2.CurrentlyPickedUp = true;
+                    }
+                }),
+                new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
+                {
+                    if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
+                    {
+                        ClearItemTarget();
+                    }
+                    else if (possibleCombinations.Count() > 0)
+                    {
+                        storedItem = capturedTarget2;
+                        storedItem.CurrentlyPickedUp = true;
+                        isWalking = false;
+                        isWalkingToTargetPosition = false;
+                        walkTargetItem = null;
+                        TrySetTargetToItem(ItemTargetMode.RANDOM, possibleCombinations);
+                        StartAutoWalkToTarget();
+                        inPickup = false;
+                    }
+                    else if (!GodotObject.IsInstanceValid(capturedTarget2) || !mainCharacter.Visible)
+                    {
+                        ClearItemTarget();
+                    }
+                    else
+                    {
+                        capturedTarget2.UsePickedUpItem();
+                        if (!capturedTarget2.itemObject.itemInformation.isReusable)
+                        {
+                            spawnedItems.Remove(capturedTarget2);
+                            capturedTarget2.QueueFree();
+                        }
+                        else
+                        {
+                            ReleaseItem(capturedTarget2);
+                        }
+                        ClearItemTarget(usingItem: true);
+                    }
+                })
+            });
+            return;
+        }
+        ItemWindow capturedTarget = walkTargetItem;
+        inPickup = true;
+        capturedTarget.MousePassthrough = true;
+        mainCharacter.ForceMainBodyStateQueue(new Character.MainBodyAnimationStack[2]
+        {
+            new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: false, delegate
+            {
+                if (!GodotObject.IsInstanceValid(capturedTarget) || !mainCharacter.Visible)
+                {
+                    ClearItemTarget();
+                }
+                else
+                {
+                    capturedTarget.CurrentlyPickedUp = true;
+                }
+            }),
+            new Character.MainBodyAnimationStack(Character.MainBodyStates.Forced_Animation, "Pickup", reversed: true, delegate
+            {
+                if (!GodotObject.IsInstanceValid(capturedTarget) || !mainCharacter.Visible)
+                {
+                    ClearItemTarget();
+                }
+                else
+                {
+                    capturedTarget.UsePickedUpItem();
+                    if (!capturedTarget.itemObject.itemInformation.isReusable)
+                    {
+                        spawnedItems.Remove(capturedTarget);
+                        capturedTarget.QueueFree();
+                    }
+                    ClearItemTarget(usingItem: true);
+                }
+            })
+        });
+    }
 
-	public void AbortActivePickup()
-	{
-		if (inPickup || walkTargetItem != null || storedItem != null)
-		{
-			if (walkTargetItem != null && GodotObject.IsInstanceValid(walkTargetItem))
-			{
-				walkTargetItem.CurrentlyPickedUp = false;
-			}
-			if (storedItem != null && GodotObject.IsInstanceValid(storedItem))
-			{
-				storedItem.CurrentlyPickedUp = false;
-			}
-			inPickup = false;
-			isWalking = false;
-			isWalkingToTargetPosition = false;
-			walkTargetItem = null;
-			storedItem = null;
-		}
-	}
+    public void AbortActivePickup()
+    {
+        if (inPickup || walkTargetItem != null || storedItem != null)
+        {
+            if (walkTargetItem != null && GodotObject.IsInstanceValid(walkTargetItem))
+            {
+                walkTargetItem.CurrentlyPickedUp = false;
+            }
+            if (storedItem != null && GodotObject.IsInstanceValid(storedItem))
+            {
+                storedItem.CurrentlyPickedUp = false;
+            }
+            inPickup = false;
+            isWalking = false;
+            isWalkingToTargetPosition = false;
+            walkTargetItem = null;
+            storedItem = null;
+        }
+    }
 
-	private void ReleaseItem(ItemWindow item)
-	{
-		if (item != null && GodotObject.IsInstanceValid(item))
-		{
-			item.CurrentlyPickedUp = false;
-			item.MousePassthrough = false;
-		}
-	}
+    private void ReleaseItem(ItemWindow item)
+    {
+        if (item != null && GodotObject.IsInstanceValid(item))
+        {
+            item.CurrentlyPickedUp = false;
+            item.MousePassthrough = false;
+        }
+    }
 
-	public void ClearItemTarget(bool usingItem = false)
-	{
-		isWalking = false;
-		isWalkingToTargetPosition = false;
-		walkTargetItem = null;
-		inPickup = false;
-		if (!usingItem)
-		{
-			mainCharacter.ForceMainBodyState(Character.MainBodyStates.Idle, "Idle");
-			mainCharacter.mainBodyTimer.WaitTime = 1.0;
-			mainCharacter.mainBodyTimer.Start();
-		}
-	}
+    public void ClearItemTarget(bool usingItem = false)
+    {
+        isWalking = false;
+        isWalkingToTargetPosition = false;
+        walkTargetItem = null;
+        inPickup = false;
+        if (!usingItem)
+        {
+            mainCharacter.ForceMainBodyState(Character.MainBodyStates.Idle, "Idle");
+            mainCharacter.mainBodyTimer.WaitTime = 1.0;
+            mainCharacter.mainBodyTimer.Start();
+        }
+    }
 
-	private void ChooseDirection()
-	{
-		if (GD.RandRange(1, 2) == 1)
-		{
-			walkDirection = 1;
-			mainCharacter.FlipHSpriteTo(FlipH: true);
-		}
-		else
-		{
-			walkDirection = -1;
-			mainCharacter.FlipHSpriteTo(FlipH: false);
-		}
-	}
+    private void ChooseDirection()
+    {
+        if (GD.RandRange(1, 2) == 1)
+        {
+            walkDirection = 1;
+            mainCharacter.FlipHSpriteTo(FlipH: true);
+        }
+        else
+        {
+            walkDirection = -1;
+            mainCharacter.FlipHSpriteTo(FlipH: false);
+        }
+    }
 
-	private void OnCharacterWalking()
-	{
-		isWalking = true;
-		ChooseDirection();
-	}
+    private void OnCharacterWalking()
+    {
+        isWalking = true;
+        ChooseDirection();
+    }
 
-	private void OnCharacterFinishedWalking()
-	{
-		isWalking = false;
-	}
+    private void OnCharacterFinishedWalking()
+    {
+        isWalking = false;
+    }
 
-	    private Rect2I GetThinnerCollisionBox()
+        private Rect2I GetThinnerCollisionBox()
     {
         float num = 0.33f;
         if (_isMobile)
         {
-            int w = Mathf.RoundToInt((float)mainCharacter.trueSize.X * num);
-            int x = Mathf.RoundToInt(Position.X + (mainCharacter.trueSize.X - w) / 2f);
+            int w = mainCharacter.trueSize.X;
+            int x = Mathf.RoundToInt(Position.X);
             int y = Mathf.RoundToInt(Position.Y);
             return new Rect2I(new Vector2I(x, y), new Vector2I(w, mainCharacter.trueSize.Y));
         }
@@ -1654,57 +1717,57 @@ public partial class Main : Node2D
         return new Rect2I(new Vector2I(mainWindow.Position.X + num3, mainWindow.Position.Y), new Vector2I(num2, mainWindow.Size.Y));
     }
 
-	private void CheckLandingInteraction(bool hardLanding = false)
-	{
-		Rect2I collisionBox = GetThinnerCollisionBox();
-		int centerX = collisionBox.Position.X + collisionBox.Size.X / 2;
-		List<ActorWindow> source = (from a in spawnedCompanions
-			where GodotObject.IsInstanceValid(a) && a.Visible && !a.inUse && !a.inUseByAttachment
-			orderby Mathf.Abs(a.Position.X + a.Size.X / 2 - centerX)
-			select a).ToList();
-		if (hardLanding)
-		{
-			ActorWindow actorWindow = source.FirstOrDefault((ActorWindow a) => a.characterActor.characterInformation.isAggroActor);
-			if (actorWindow != null)
-			{
-				actorWindow.OnAggroTimerTimeout();
-				return;
-			}
-		}
-		ActorWindow actorWindow2 = source.FirstOrDefault((ActorWindow a) => collisionBox.Intersects(new Rect2I(a.Position, a.Size)));
-		if (actorWindow2 != null)
-		{
-			WeightGroup<AttachDataRes> weightGroup = actorWindow2.BuildWeightedAttachments(actorWindow2.characterActor.characterInformation.overrideAnimation);
-			if (weightGroup.Count() > 0)
-			{
-				ClearAllAttachments();
-				ForceDropCharacter();
-				CallCharacterAttachmentSpawn(weightGroup.GetItem(GD.RandRange(0, 10000)));
-				actorWindow2.inUse = true;
-			}
-			return;
-		}
-		ItemWindow itemWindow = null;
-		int num = int.MaxValue;
-		foreach (ItemWindow spawnedItem in spawnedItems)
-		{
-			if (!GodotObject.IsInstanceValid(spawnedItem) || !spawnedItem.Visible || spawnedItem.CurrentlyPickedUp || !spawnedItem.itemObject.itemInformation.isUsableDroppedOn)
-			{
-				continue;
-			}
-			Rect2I b = new Rect2I(spawnedItem.Position, spawnedItem.Size);
-			if (collisionBox.Intersects(b))
-			{
-				int num2 = Mathf.Abs(b.Position.X + b.Size.X / 2 - centerX);
-				if (num2 < num)
-				{
-					num = num2;
-					itemWindow = spawnedItem;
-				}
-			}
-		}
-		itemWindow?.UsePickedUpItem();
-	}
+    private void CheckLandingInteraction(bool hardLanding = false)
+    {
+        Rect2I collisionBox = GetThinnerCollisionBox();
+        int centerX = collisionBox.Position.X + collisionBox.Size.X / 2;
+        List<ActorWindow> source = (from a in spawnedCompanions
+            where GodotObject.IsInstanceValid(a) && a.Visible && !a.inUse && !a.inUseByAttachment
+            orderby Mathf.Abs(a.Position.X + a.Size.X / 2 - centerX)
+            select a).ToList();
+        if (hardLanding)
+        {
+            ActorWindow actorWindow = source.FirstOrDefault((ActorWindow a) => a.characterActor.characterInformation.isAggroActor);
+            if (actorWindow != null)
+            {
+                actorWindow.OnAggroTimerTimeout();
+                return;
+            }
+        }
+        ActorWindow actorWindow2 = source.FirstOrDefault((ActorWindow a) => collisionBox.Intersects(new Rect2I(a.Position, a.Size)));
+        if (actorWindow2 != null)
+        {
+            WeightGroup<AttachDataRes> weightGroup = actorWindow2.BuildWeightedAttachments(actorWindow2.characterActor.characterInformation.overrideAnimation);
+            if (weightGroup.Count() > 0)
+            {
+                ClearAllAttachments();
+                ForceDropCharacter();
+                CallCharacterAttachmentSpawn(weightGroup.GetItem(GD.RandRange(0, 10000)));
+                actorWindow2.inUse = true;
+            }
+            return;
+        }
+        ItemWindow itemWindow = null;
+        int num = int.MaxValue;
+        foreach (ItemWindow spawnedItem in spawnedItems)
+        {
+            if (!GodotObject.IsInstanceValid(spawnedItem) || !spawnedItem.Visible || spawnedItem.CurrentlyPickedUp || !spawnedItem.itemObject.itemInformation.isUsableDroppedOn)
+            {
+                continue;
+            }
+            Rect2I b = new Rect2I(spawnedItem.Position, spawnedItem.Size);
+            if (collisionBox.Intersects(b))
+            {
+                int num2 = Mathf.Abs(b.Position.X + b.Size.X / 2 - centerX);
+                if (num2 < num)
+                {
+                    num = num2;
+                    itemWindow = spawnedItem;
+                }
+            }
+        }
+        itemWindow?.UsePickedUpItem();
+    }
 
 
 
@@ -1724,7 +1787,7 @@ public partial class Main : Node2D
 
 
 
-	
+    
 
 
 

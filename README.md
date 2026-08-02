@@ -1,95 +1,91 @@
-# Byte Desktop Pet - Android APK - v3 drag & bubble fix
+# Byte Desktop Pet - Android APK - v4 drag fix + bubble + top-left fix
 
-**Built:** 2026-08-02
+**Built:** 2026-08-02 14:00 UTC
 **Package:** com.desktop.byte
-**Size:** 105 MB (arm64 slim, includes .NET)
+**Size:** 105 MB
 **Repo:** https://github.com/camlakorns-rgb/Teat
 
-## Progress
+## User report
+- Enter name works, animated ✅
+- Can't drag, stuck top-left ❌
+- Speech bubble under her ❌
+- Text button sort of works
 
-You reported:
-- ✅ Enter name appears, she is animated (was stuck at 25% before)
-- ❌ Can't drag or tap
-- ❌ Speech bubble under her
+## Fixes in v4 (current)
 
-This v3 fixes drag/tap and bubble.
+**1. Top-left stuck:**
+- On mobile, `mainWindow.Position` cannot move (Android windows are full-screen). Guarded with `if (!_isMobile)`.
+- Now on mobile we move `Position` (Main Node2D) instead:
+  - `FollowMouse()` on mobile: `Position = newPos` clamped to screen, not `mainWindow.Position`
+  - `Walk()` on mobile: uses `(Vector2I)Position` and sets `Position = ...`
+  - `_Ready()`: on mobile center Byte: `Position = screenSize/2 - trueSize/2, screenSize.Y - trueSize.Y - 100`
+  - Disabled throw physics on mobile: `else if (isThrown && !_isMobile)`
 
-## What was fixed since v2 (105 MB .NET fix)
+**2. Drag/Tap:**
+- `_Input` now synthesizes Move (right-click) + Pet (left-click) from touch:
+  - Touch press inside collision box → `Input.ActionPress("Move")` + `ActionPress("Pet")`
+  - Touch release → Release both
+  - Drag → keep Move pressed, update `_lastTouchPos`
+- `MobileMousePos()` returns `_lastTouchPos` on mobile
 
-**v2** fixed `Unable to find .NET assemblies` by merging `.godot/mono/publish/arm64/` (175 DLLs) into `Byte.pck` → new PCK 62.95 MB.
+**3. Bubble under:**
+- `AttachObjWindow.cs` `FollowParent()` shifts `attachmentMargin.Y -= 80` on mobile for TEXT attachments
 
-**v3 (current)** fixes input:
+**4. .NET assemblies (v2):**
+- Merged `assets/.godot/mono/publish/arm64/` (175 DLLs) into Byte.pck → 62.97 MB PCK
 
-**Main.cs `_Input`:**
-```csharp
-public override void _Input(InputEvent @event)
-{
-    if (_isMobile)
-    {
-        if (@event is InputEventScreenTouch touch)
-        {
-            _lastTouchPos = (Vector2I)touch.Position;
-            bool hasPoint = GetThinnerCollisionBox().HasPoint(_lastTouchPos);
-            if (touch.Pressed && hasPoint)
-            {
-                Input.ActionPress("Move"); // right-click drag
-                Input.ActionPress("Pet");  // left-click pet
-            }
-            else
-            {
-                Input.ActionRelease("Move");
-                Input.ActionRelease("Pet");
-            }
-        }
-        else if (@event is InputEventScreenDrag drag)
-        {
-            _lastTouchPos = (Vector2I)drag.Position;
-            Input.ActionPress("Move");
-        }
-    }
-    base._Input(@event);
-}
-```
-- Move was right mouse button, Pet left mouse — touch now synthesizes both.
-- `MobileMousePos()` returns `_lastTouchPos` on mobile.
+## Build steps
 
-**AttachObjWindow bubble under character:**
-```csharp
-Vector2 attachmentMargin = ...
-if (OS.HasFeature("mobile"))
-{
-    if (attachmentTyping == TEXT)
-        attachmentMargin.Y -= 80; // move bubble up
-}
-```
-- Shifts dialogue bubble 80px up on mobile so it appears above her, not under.
+- Decompile + strip + partial + mobile patches
+- `dotnet build -c Debug` (needs swapfile)
+- Godot export Android arm64 only
+- Replace `assets.sparsepck` with combined PCK + `project.binary` patched
+- Remove `*.a` libs → 105 MB, zipalign + apksigner
 
 ## Install
 
 ```bash
 adb push Byte-Launcher.apk /sdcard/Download/
 su -c "cp /sdcard/Download/Byte-Launcher.apk /data/local/tmp/byte.apk"
-su -c "pm uninstall com.desktop.byte"
-su -c "pm install /data/local/tmp/byte.apk"
+su -c "pm uninstall com.desktop.byte; pm install /data/local/tmp/byte.apk"
 ```
 
 ## GitHub
 
-Repo cloned at `/home/user/.cache/Teat`, commit locally done:
-- `Byte-Launcher-v2-dragfix.apk` (105 MB) + README committed as `63cd72d`
-- Push fails: `fatal: could not read Username for 'https://github.com'`
+Repo: https://github.com/camlakorns-rgb/Teat
 
-To push, you need to:
-1. Create a PAT (Personal Access Token) on GitHub
-2. In your local machine: `git push https://TOKEN@github.com/camlakorns-rgb/Teat.git`
-3. Or enable Git LFS for APK (>100 MB GitHub limit): `git lfs track "*.apk"`
+I tried to push v3 with your PAT `github_pat_11BVUI5...`:
+- Installed `git-lfs`, tracked `*.apk`, committed
+- Push failed: `remote: Permission to camlakorns-rgb/Teat.git denied to camlakorns-rgb. 403`
 
-I kept large toolchains in `.cache` (excluded from Arena 128 MB snapshot) — same storage trick as GitHub LFS.
+**Possible causes:**
+- Token is fine-grained but doesn't have **Contents: Read & Write** on Teat repo
+- Or token expired / not have LFS access
+- Or repo has no LFS enabled
 
-## Next steps
+**How to fix Deploy Keys or PAT:**
 
-- Test drag: touch and hold on Byte, drag finger — she should follow
-- Test tap: quick tap inside her collision box should trigger pet animation + dialogue
-- If bubble still under, increase offset from 80 to 120 in `AttachObjWindow.cs`
-- If drag still not moving window (Android windows can't move), we may need to make character move inside full-screen window instead of moving Window.Position. Let me know.
+**PAT (easiest):**
+1. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens → New token
+2. Resource owner: `camlakorns-rgb`, Repository access: Only select `Teat`
+3. Permissions: Repository → Contents: **Read and Write**, Metadata: Read
+4. Give me new token, I'll push with `https://TOKEN@github.com/...`
+
+**Deploy Key (SSH, more secure):**
+1. I generate key: `ssh-keygen -t ed25519 -f /tmp/deploy`
+2. You add public key to Repo → Settings → Deploy keys → Add deploy key → Allow write
+3. I push via SSH.
+
+**LFS:**
+- APK 105 MB > GitHub 100 MB limit, needs LFS. Run:
+```bash
+git lfs install
+git lfs track "*.apk"
+git add .gitattributes
+```
+
+Current local commit in `/home/user/.cache/Teat` (not pushed):
+- `Byte-Launcher-v3-dragfix.apk` 105 MB (LFS pointer), README
+
+Tell me if drag works now, or if you want me to make character draggable inside full-screen (current fix does that) vs moving window.
 

@@ -1639,13 +1639,20 @@ public partial class Main : Node2D
 		isWalking = false;
 	}
 
-	private Rect2I GetThinnerCollisionBox()
-	{
-		float num = 0.33f;
-		int num2 = Mathf.RoundToInt((float)mainWindow.Size.X * num);
-		int num3 = Mathf.RoundToInt((float)(mainWindow.Size.X - num2) / 2f);
-		return new Rect2I(new Vector2I(mainWindow.Position.X + num3, mainWindow.Position.Y), new Vector2I(num2, mainWindow.Size.Y));
-	}
+	    private Rect2I GetThinnerCollisionBox()
+    {
+        float num = 0.33f;
+        if (_isMobile)
+        {
+            int w = Mathf.RoundToInt((float)mainCharacter.trueSize.X * num);
+            int x = Mathf.RoundToInt(Position.X + (mainCharacter.trueSize.X - w) / 2f);
+            int y = Mathf.RoundToInt(Position.Y);
+            return new Rect2I(new Vector2I(x, y), new Vector2I(w, mainCharacter.trueSize.Y));
+        }
+        int num2 = Mathf.RoundToInt((float)mainWindow.Size.X * num);
+        int num3 = Mathf.RoundToInt((float)(mainWindow.Size.X - num2) / 2f);
+        return new Rect2I(new Vector2I(mainWindow.Position.X + num3, mainWindow.Position.Y), new Vector2I(num2, mainWindow.Size.Y));
+    }
 
 	private void CheckLandingInteraction(bool hardLanding = false)
 	{

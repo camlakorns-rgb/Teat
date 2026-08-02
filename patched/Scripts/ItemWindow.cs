@@ -159,101 +159,153 @@ public partial class ItemWindow : Window
     }
 
     private bool _mobileHeld;
-    private Vector2I _mobileOffset;
+    private Vector2I _mobileGrabLocal;
+    private Vector2I _mobileGrabWindowPos;
+    private Vector2I _mobileLastLocal;
+    private Vector2 _mobileVelocity;
+    private double _mobileLastTime;
 
-    private bool IsMobileTouchOnThisItem(Vector2I startPos)
+    public override void _Input(InputEvent @event)
     {
-        return new Rect2I(base.Position, base.Size).HasPoint(startPos);
+        if (!Main._isMobile || !isSetup || CurrentlyPickedUp)
+        {
+            return;
+        }
+        if (@event is InputEventScreenTouch touch)
+        {
+            if (touch.Pressed)
+            {
+                if (Main.Instance.SomethingHasBeenGrabbed)
+                {
+                    return;
+                }
+                _mobileHeld = true;
+                Main.Instance.SomethingHasBeenGrabbed = true;
+                Main.Instance.mainWindow.AlwaysOnTop = false;
+                _mobileGrabLocal = (Vector2I)touch.Position;
+                _mobileGrabWindowPos = base.Position;
+                _mobileLastLocal = _mobileGrabLocal;
+                _mobileVelocity = Vector2.Zero;
+                _mobileLastTime = Time.GetTicksMsec() / 1000.0;
+                UpdateCombinationShaders(enable: true);
+                if (itemObject.itemInformation.possiblePickUpDialogue.Count() > 0 && Main.Instance.mainCharacter.Visible && (float)GD.RandRange(0, 100) < itemObject.itemInformation.PerchentChanceOfDialogue)
+                {
+                    DialogueDataRes dialogueDataRes = Main.Instance.PickDialogue(itemObject.itemInformation.possiblePickUpDialogue);
+                    if (dialogueDataRes != null)
+                    {
+                        Main.Instance.dialogueStack.Add(dialogueDataRes);
+                        Main.Instance.PopDialogueInStack(skipTimer: true);
+                    }
+                }
+            }
+            else if (_mobileHeld)
+            {
+                ReleaseMobileItem();
+            }
+        }
+        else if (@event is InputEventScreenDrag drag && _mobileHeld)
+        {
+            Vector2I local = (Vector2I)drag.Position;
+            double now = Time.GetTicksMsec() / 1000.0;
+            double dt = Mathf.Max((float)(now - _mobileLastTime), 0.001f);
+            _mobileVelocity = ((Vector2)(local - _mobileLastLocal)) / (float)dt;
+            _mobileLastLocal = local;
+            _mobileLastTime = now;
+            ApplyMobilePosition();
+        }
+        base._Input(@event);
     }
 
-    private void ProcessMobileItem(double delta)
+    private Vector2I ClampMobilePos(Vector2I pos)
     {
+        Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
+        pos.X = Mathf.Clamp(pos.X, 0, Mathf.Max(0, screenSize.X - itemObject.trueSize.X));
+        pos.Y = Mathf.Clamp(pos.Y, 0, Mathf.Max(0, screenSize.Y - itemObject.trueSize.Y));
+        return pos;
+    }
+
+    private void ApplyMobilePosition()
+    {
+        base.Position = ClampMobilePos(_mobileGrabWindowPos + (_mobileLastLocal - _mobileGrabLocal));
+    }
+
+    private void ReleaseMobileItem()
+    {
+        _mobileHeld = false;
         Main m = Main.Instance;
         if (m == null)
         {
             return;
         }
-        bool isActive = m._mobileTouchIndex >= 0 && m._mobileTouchTarget == Main.MobileTouchTargetKind.Item && IsMobileTouchOnThisItem(m._mobileTouchStart);
-        if (isActive)
+        m.SomethingHasBeenGrabbed = false;
+        m.mainWindow.AlwaysOnTop = true;
+        UpdateCombinationShaders(enable: false);
+        ApplyMobilePosition();
+        if (m.settingWindowThrowPhysics && _mobileVelocity.Length() > 260f)
         {
-            if (!_mobileHeld)
-            {
-                _mobileHeld = true;
-                m.SomethingHasBeenGrabbed = true;
-                m.mainWindow.AlwaysOnTop = false;
-                _mobileOffset = (Vector2I)base.Position - Main._lastTouchPos;
-                UpdateCombinationShaders(enable: true);
-            }
-            Vector2I screenSize = DisplayServer.ScreenGetSize(m.screenDataHandler.screenIndex);
-            Vector2I newPos = Main._lastTouchPos + _mobileOffset;
-            newPos.X = Mathf.Clamp(newPos.X, 0, screenSize.X - itemObject.trueSize.X);
-            newPos.Y = Mathf.Clamp(newPos.Y, 0, screenSize.Y - itemObject.trueSize.Y);
-            base.Position = newPos;
+            itemWindowVelocity = _mobileVelocity * m.mouseVelocityScaler;
+            itemWindowVelocity.Y = Mathf.Clamp(itemWindowVelocity.Y, -1600f, float.MaxValue);
+            isThrown = true;
         }
-        else if (_mobileHeld)
+        Rect2I thisRect = new Rect2I(base.Position, base.Size);
+        if (m.mainCharacter.Visible && m.GetThinnerCollisionBox().Intersects(thisRect))
         {
-            _mobileHeld = false;
-            m.SomethingHasBeenGrabbed = false;
-            m.mainWindow.AlwaysOnTop = true;
-            UpdateCombinationShaders(enable: false);
-            if (m.settingWindowThrowPhysics && m._mobileDragVelocity.Length() > 260f)
+            UseOnMainActor();
+            if (!itemObject.itemInformation.isReusable)
             {
-                itemWindowVelocity = m._mobileDragVelocity * m.mouseVelocityScaler;
-                itemWindowVelocity.Y = Mathf.Clamp(itemWindowVelocity.Y, -1600f, float.MaxValue);
-                isThrown = true;
+                m.TweenGrabRelease();
+                m.spawnedItems.Remove(this);
+                CallDeferred("queue_free");
             }
-            Rect2I thisRect = new Rect2I(base.Position, base.Size);
-            if (m.mainCharacter.Visible && m.GetThinnerCollisionBox().Intersects(thisRect))
+            return;
+        }
+        bool usedOnActor = false;
+        if (itemObject.itemInformation.possibleUsableAIs.Count() > 0)
+        {
+            foreach (ActorWindow spawnedActor in m.spawnedActors)
             {
-                UseOnMainActor();
-                if (!itemObject.itemInformation.isReusable)
+                if (!GodotObject.IsInstanceValid(spawnedActor))
                 {
-                    m.TweenGrabRelease();
-                    m.spawnedItems.Remove(this);
-                    CallDeferred("queue_free");
+                    continue;
                 }
-                return;
-            }
-            bool usedOnActor = false;
-            if (itemObject.itemInformation.possibleUsableAIs.Count() > 0)
-            {
-                foreach (ActorWindow spawnedActor in m.spawnedActors)
+                AiItemDataRes aiItemDataRes = null;
+                foreach (AiItemDataRes possibleUsableAI in itemObject.itemInformation.possibleUsableAIs)
                 {
-                    if (!GodotObject.IsInstanceValid(spawnedActor))
+                    if (possibleUsableAI.targetActorsID == spawnedActor.characterActor.characterInformation._itemID)
                     {
-                        continue;
-                    }
-                    AiItemDataRes aiItemDataRes = null;
-                    foreach (AiItemDataRes possibleUsableAI in itemObject.itemInformation.possibleUsableAIs)
-                    {
-                        if (possibleUsableAI.targetActorsID == spawnedActor.characterActor.characterInformation._itemID)
-                        {
-                            aiItemDataRes = possibleUsableAI;
-                            break;
-                        }
-                    }
-                    if (aiItemDataRes == null)
-                    {
-                        continue;
-                    }
-                    if (new Rect2I(spawnedActor.Position, spawnedActor.Size).Intersects(thisRect) && spawnedActor.Visible)
-                    {
-                        UseOnOtherActor(spawnedActor, aiItemDataRes);
-                        usedOnActor = true;
-                        if (!itemObject.itemInformation.isReusable)
-                        {
-                            m.TweenGrabRelease();
-                            m.spawnedItems.Remove(this);
-                            CallDeferred("queue_free");
-                        }
+                        aiItemDataRes = possibleUsableAI;
                         break;
                     }
                 }
+                if (aiItemDataRes == null)
+                {
+                    continue;
+                }
+                if (new Rect2I(spawnedActor.Position, spawnedActor.Size).Intersects(thisRect) && spawnedActor.Visible)
+                {
+                    UseOnOtherActor(spawnedActor, aiItemDataRes);
+                    usedOnActor = true;
+                    if (!itemObject.itemInformation.isReusable)
+                    {
+                        m.TweenGrabRelease();
+                        m.spawnedItems.Remove(this);
+                        CallDeferred("queue_free");
+                    }
+                    break;
+                }
             }
-            if (!usedOnActor)
-            {
-                CombineItem(thisRect);
-            }
+        }
+        if (!usedOnActor)
+        {
+            CombineItem(thisRect);
+        }
+    }
+
+    private void ProcessMobileItem(double delta)
+    {
+        if (_mobileHeld)
+        {
+            ApplyMobilePosition();
         }
     }
 

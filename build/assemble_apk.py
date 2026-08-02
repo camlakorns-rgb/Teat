@@ -4,10 +4,10 @@ import zipfile, os, shutil, sys
 
 V9 = '/home/user/.cache/v9'
 BASE = f'{V9}/proj/out/Byte-Launcher.apk'
-PCK = f'{V9}/out/Byte-v10.pck'
+PCK = f'{V9}/out/Byte-v11.pck'
 PATCHED_PB = '/tmp/v8pb/assets/project.binary'  # 12787B known-good patched project.binary
 WORK = f'{V9}/apk_work'
-FINAL = f'{V9}/out/Byte-Launcher-v10-mobileui.apk'
+FINAL = f'{V9}/out/Byte-Launcher-v11-bugfix.apk'
 
 # ---- 1. extract base apk
 if os.path.exists(WORK):

@@ -141,6 +141,29 @@ public partial class ActorWindow : Window
         cachedThinBox = ComputeThinnerCollisionBox();
     }
 
+    public override void _Input(InputEvent @event)
+    {
+        if (Main._isMobile && !inUseByAttachment && @event is InputEventScreenTouch touch)
+        {
+            if (touch.Pressed && !Main.Instance.SomethingHasBeenGrabbed)
+            {
+                Main._lastTouchPos = new Rect2I(base.Position, base.Size).GetCenter();
+                if (!Input.IsActionPressed("Pet"))
+                {
+                    Input.ActionPress("Pet");
+                }
+            }
+            else if (!touch.Pressed)
+            {
+                if (Input.IsActionPressed("Pet"))
+                {
+                    Input.ActionRelease("Pet");
+                }
+            }
+        }
+        base._Input(@event);
+    }
+
     private void PopActor()
     {
         if (characterActor.characterInformation.UnBlockable)

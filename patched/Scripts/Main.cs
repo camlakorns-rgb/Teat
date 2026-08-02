@@ -74,6 +74,37 @@ public partial class Main : Node2D
         }
     }
 
+    public void CloseMagnifier()
+    {
+        _magnifierActive = false;
+        if (Magnifier != null && GodotObject.IsInstanceValid(Magnifier))
+        {
+            Magnifier.QueueFree();
+        }
+        Magnifier = null;
+    }
+
+    public void ToggleDespawnMobile()
+    {
+        if (!_isMobile)
+        {
+            return;
+        }
+        ClearAllAttachments();
+        dialogueStack.Clear();
+        dialogueStack.Add(mainCharacter.characterInformation.responseTexts[CharacterInfoDataRes.ResponseToSituation.IN_CONVO]);
+        PopDialogueInStack(skipTimer: true);
+        if (mainCharacter.Visible)
+        {
+            mainCharacter.Visible = false;
+        }
+        else
+        {
+            mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
+        }
+        saveHandler.SaveSettings();
+    }
+
     public override void _Input(InputEvent @event)
     {
         if (_isMobile)
@@ -421,6 +452,16 @@ public partial class Main : Node2D
         if (_isMobile)
         {
             AddChild(new MobileUI());
+            if (spawnerTimer != null && spawnerTimer.IsStopped())
+            {
+                spawnerTimer.WaitTime = 4f;
+                spawnerTimer.Start();
+            }
+            if (spawnerActorTimer != null && spawnerActorTimer.IsStopped())
+            {
+                spawnerActorTimer.WaitTime = 20f;
+                spawnerActorTimer.Start();
+            }
         }
         Callable.From(delegate
         {
@@ -1028,6 +1069,13 @@ public partial class Main : Node2D
             {
                 return;
             }
+            if (!ResourceCache.resourcesLoaded.ContainsKey(ResourceCache.ResourceTyping.ITEM) || ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Count == 0)
+            {
+                GD.PrintErr("[Spawner] ITEM resources not ready yet - retrying in 5s");
+                spawnerTimer.WaitTime = 5f;
+                spawnerTimer.Start();
+                return;
+            }
             ICollection<string> keys = ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Keys;
             WeightGroup<string> weightGroup = new WeightGroup<string>();
             foreach (string item2 in keys)
@@ -1044,18 +1092,28 @@ public partial class Main : Node2D
             if (x == -1 && y == -1)
             {
                 int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
-                int screenCount = DisplayServer.GetScreenCount();
-                int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
-                for (int i = 0; i < screenCount; i++)
+                if (Main._isMobile)
                 {
-                    Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
-                    if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
-                    {
-                        y2 = rect2I.Position.Y;
-                        break;
-                    }
+                    Vector2I sz = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
+                    num = Mathf.Clamp(num, 0, Mathf.Max(0, sz.X - itemWindow.Size.X));
+                    int yTop = Mathf.Max(DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y, 0);
+                    itemWindow.Position = new Vector2I(num, yTop);
                 }
-                itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
+                else
+                {
+                    int screenCount = DisplayServer.GetScreenCount();
+                    int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
+                    for (int i = 0; i < screenCount; i++)
+                    {
+                        Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
+                        if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
+                        {
+                            y2 = rect2I.Position.Y;
+                            break;
+                        }
+                    }
+                    itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
+                }
             }
             else
             {

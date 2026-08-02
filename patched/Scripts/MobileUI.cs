@@ -1,23 +1,30 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 // On-screen mobile control bar (top-right corner of the screen, NOT on Byte).
-// Each button synthesizes the same input action the desktop keyboard binds, so
-// every game feature (pause menu, terminal, sit, clothes, screen-lock, magnifier,
-// despawn) becomes reachable by touch. Created only on mobile (Main._Ready).
+// v11: all buttons are TAP-based (press + immediate release) because every
+// action they trigger is JustPressed-based. v10 used hold-buttons, which left
+// the action stuck pressed when the bar auto-hid (button release was lost) ->
+// "terminal can only be entered once", "menu only sort of works". Fixed.
 //
 // Buttons:
-//   MENU   hold -> PauseGame
-//   TERM   hold -> Terminal
-//   SIT    tap  -> Sit
-//   OUTFIT tap  -> Clothing_Up,  long-press -> Clothing_Down
-//   LOCK   hold -> Screen_Lock   (faked touch on Byte so the hit-test passes)
-//   AWAY   hold -> Despawn       (faked touch on Byte), long-press -> move all items to Byte
-//   ZOOM   tap  -> Magnifier
+//   MENU   tap -> PauseGame
+//   TERM   tap -> Terminal
+//   SIT    tap -> Sit
+//   OUTFIT tap -> Clothing_Up,  long-press -> Clothing_Down
+//   LOCK   tap -> Screen_Lock   (faked touch on Byte so the hit-test passes)
+//   AWAY   tap -> hide Byte / bring her back; long-press -> move all items to her
+//   ZOOM   tap -> Magnifier    (magnifier window has its own CLOSE button)
 public partial class MobileUI : CanvasLayer
 {
     public static MobileUI Instance;
     private VBoxContainer _box;
+    private readonly List<string> _managedActions = new List<string>
+    {
+        "PauseGame", "Terminal", "Sit", "Clothing_Up", "Clothing_Down",
+        "Screen_Lock", "Despawn", "Magnifier"
+    };
 
     public override void _Ready()
     {
@@ -32,13 +39,13 @@ public partial class MobileUI : CanvasLayer
         _box.AddThemeConstantOverride("separation", 6);
         AddChild(_box);
 
-        AddHoldButton("MENU", "PauseGame");
-        AddHoldButton("TERM", "Terminal");
-        AddTapButton("SIT", "Sit");
+        AddTapActionButton("MENU", "PauseGame");
+        AddTapActionButton("TERM", "Terminal");
+        AddTapActionButton("SIT", "Sit");
         AddOutfitButton();
-        AddHoldByteButton("LOCK", "Screen_Lock", null);
-        AddHoldByteButton("AWAY", "Despawn", () => Main.Instance.RepositionAllItemsToMouseScreen());
-        AddTapButton("ZOOM", "Magnifier");
+        AddTapByteButton("LOCK", "Screen_Lock");
+        AddAwayButton();
+        AddTapActionButton("ZOOM", "Magnifier");
     }
 
     public override void _Process(double delta)
@@ -49,6 +56,18 @@ public partial class MobileUI : CanvasLayer
             return;
         }
         bool occupied = m.Pause != null || m.Terminal != null || (m.spawnedMinigames != null && m.spawnedMinigames.Count > 0);
+        if (occupied && Visible)
+        {
+            // Bar is being covered by a window: make sure no action stays stuck
+            // pressed (a ButtonUp would be lost while hidden).
+            foreach (string a in _managedActions)
+            {
+                if (Input.IsActionPressed(a))
+                {
+                    Input.ActionRelease(a);
+                }
+            }
+        }
         Visible = !occupied;
     }
 
@@ -89,21 +108,26 @@ public partial class MobileUI : CanvasLayer
         return b;
     }
 
-    private void AddHoldButton(string label, string action)
-    {
-        Button b = MakeButton(label);
-        b.ButtonDown += () => Input.ActionPress(action);
-        b.ButtonUp += () => Input.ActionRelease(action);
-        _box.AddChild(b);
-    }
-
-    private void AddTapButton(string label, string action)
+    // Tap: press the action for one frame (JustPressed fires), then release.
+    private void AddTapActionButton(string label, string action)
     {
         Button b = MakeButton(label);
         b.ButtonDown += () =>
         {
             Input.ActionPress(action);
             Callable.From(() => Input.ActionRelease(action)).CallDeferred();
+        };
+        _box.AddChild(b);
+    }
+
+    // Tap that fakes a touch on Byte so hit-tested actions work.
+    private void AddTapByteButton(string label, string action)
+    {
+        Button b = MakeButton(label);
+        b.ButtonDown += () =>
+        {
+            Main.Instance.MobileActionOnByte(action, true);
+            Callable.From(() => Main.Instance.MobileActionOnByte(action, false)).CallDeferred();
         };
         _box.AddChild(b);
     }
@@ -131,34 +155,30 @@ public partial class MobileUI : CanvasLayer
         _box.AddChild(b);
     }
 
-    private void AddHoldByteButton(string label, string action, Action onLongPress)
+    private void AddAwayButton()
     {
-        Button b = MakeButton(label);
+        Button b = MakeButton("AWAY");
         bool longFired = false;
         b.ButtonDown += () =>
         {
             longFired = false;
-            Main.Instance.MobileActionOnByte(action, true);
-            if (onLongPress != null)
+            SceneTreeTimer t = GetTree().CreateTimer(0.6);
+            t.Timeout += () =>
             {
-                SceneTreeTimer t = GetTree().CreateTimer(0.6);
-                t.Timeout += () =>
+                if (b.ButtonPressed && !longFired)
                 {
-                    if (b.ButtonPressed && !longFired)
-                    {
-                        longFired = true;
-                        Main.Instance.MobileActionOnByte(action, false);
-                        onLongPress();
-                    }
-                };
-            }
+                    longFired = true;
+                    Main.Instance.RepositionAllItemsToMouseScreen();
+                }
+            };
         };
         b.ButtonUp += () =>
         {
             if (!longFired)
             {
-                Main.Instance.MobileActionOnByte(action, false);
+                Main.Instance.ToggleDespawnMobile();
             }
+            longFired = false;
         };
         _box.AddChild(b);
     }

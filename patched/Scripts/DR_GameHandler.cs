@@ -131,6 +131,10 @@ public partial class DR_GameHandler : MinigameBase
 
     private bool IsMouseOver()
     {
+        if (Main._isMobile)
+        {
+            return true;
+        }
         return new Rect2(base.Position, base.Size).HasPoint(DisplayServer.MouseGetPosition());
     }
 

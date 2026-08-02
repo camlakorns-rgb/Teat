@@ -14,6 +14,17 @@ public partial class Main : Node2D
     public static bool _isMobile = false;
     private static bool _isMobileChecked = false;
     public static Vector2I _lastTouchPos = new Vector2I(0,0);
+    public static readonly string V10_BUILD = "V10_MOBILEUI_BUILD";
+    public enum MobileTouchTargetKind { None, Byte, Item, Actor }
+    public int _mobileTouchIndex = -1;
+    public Vector2I _mobileTouchStart;
+    public double _mobileTouchStartTime;
+    public bool _mobileTouchMoved;
+    public MobileTouchTargetKind _mobileTouchTarget = MobileTouchTargetKind.None;
+    public Vector2 _mobileDragVelocity;
+    private Vector2I _prevTouchPos;
+    private double _lastDragTime;
+    private Vector2I _savedTouchPos;
     public Vector2I MobileMousePos()
     {
         if (_isMobile)
@@ -24,39 +35,119 @@ public partial class Main : Node2D
         return DisplayServer.MouseGetPosition();
     }
 
+    public bool IsPointOnAnyItem(Vector2I p)
+    {
+        for (int i = spawnedItems.Count - 1; i >= 0; i--)
+        {
+            ItemWindow w = spawnedItems[i];
+            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(p))
+                return true;
+        }
+        return false;
+    }
+
+    public bool IsPointOnAnyActor(Vector2I p)
+    {
+        for (int i = spawnedActors.Count - 1; i >= 0; i--)
+        {
+            ActorWindow w = spawnedActors[i];
+            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(p))
+                return true;
+        }
+        return false;
+    }
+
+    // Fake a touch at Byte's center so hit-tested actions (Screen_Lock, Despawn)
+    // work when triggered from the on-screen button bar.
+    public void MobileActionOnByte(string action, bool pressed)
+    {
+        if (pressed)
+        {
+            _savedTouchPos = _lastTouchPos;
+            _lastTouchPos = (Vector2I)(Position + (Vector2)mainCharacter.trueSize * 0.5f);
+            Input.ActionPress(action);
+        }
+        else
+        {
+            Input.ActionRelease(action);
+            _lastTouchPos = _savedTouchPos;
+        }
+    }
+
     public override void _Input(InputEvent @event)
     {
         if (_isMobile)
         {
             if (@event is InputEventScreenTouch touch)
             {
-                _lastTouchPos = (Vector2I)touch.Position;
-                bool hasPoint = false;
-                try { hasPoint = GetThinnerCollisionBox().HasPoint(_lastTouchPos); } catch { hasPoint = true; }
+                Vector2I pos = (Vector2I)touch.Position;
+                _lastTouchPos = pos;
                 if (touch.Pressed)
                 {
-                    if (hasPoint)
+                    if (MobileUI.IsPointInUI(pos))
                     {
-                        if (!Input.IsActionPressed("Move"))
-                            Input.ActionPress("Move");
-                        if (!Input.IsActionPressed("Pet"))
-                            Input.ActionPress("Pet");
+                        return;
+                    }
+                    _mobileTouchIndex = touch.Index;
+                    _mobileTouchStart = pos;
+                    _mobileTouchStartTime = Time.GetTicksMsec() / 1000.0;
+                    _mobileTouchMoved = false;
+                    _prevTouchPos = pos;
+                    _mobileDragVelocity = Vector2.Zero;
+                    _lastDragTime = _mobileTouchStartTime;
+                    if (IsPointOnAnyItem(pos))
+                        _mobileTouchTarget = MobileTouchTargetKind.Item;
+                    else if (IsPointOnAnyActor(pos))
+                        _mobileTouchTarget = MobileTouchTargetKind.Actor;
+                    else if (GetThinnerCollisionBox().HasPoint(pos))
+                        _mobileTouchTarget = MobileTouchTargetKind.Byte;
+                    else
+                        _mobileTouchTarget = MobileTouchTargetKind.None;
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Actor)
+                        Input.ActionPress("Pet");
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Byte)
+                    {
+                        Input.ActionPress("Move");
+                        Input.ActionPress("Pet");
                     }
                 }
-                else
+                else if (touch.Index == _mobileTouchIndex)
                 {
-                    if (Input.IsActionPressed("Move"))
-                        Input.ActionRelease("Move");
-                    if (Input.IsActionPressed("Pet"))
+                    double duration = Time.GetTicksMsec() / 1000.0 - _mobileTouchStartTime;
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Actor)
                         Input.ActionRelease("Pet");
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Byte)
+                    {
+                        Input.ActionRelease("Move");
+                        Input.ActionRelease("Pet");
+                    }
+                    if (_mobileTouchTarget == MobileTouchTargetKind.None && duration >= 0.5 && !_mobileTouchMoved)
+                    {
+                        Input.ActionPress("PauseGame");
+                        Callable.From(() => Input.ActionRelease("PauseGame")).CallDeferred();
+                    }
+                    _mobileTouchTarget = MobileTouchTargetKind.None;
+                    _mobileTouchIndex = -1;
                 }
             }
             else if (@event is InputEventScreenDrag drag)
             {
-                _lastTouchPos = (Vector2I)drag.Position;
-                if (!Input.IsActionPressed("Move"))
-                    Input.ActionPress("Move");
+                if (drag.Index == _mobileTouchIndex)
+                {
+                    Vector2I pos = (Vector2I)drag.Position;
+                    _lastTouchPos = pos;
+                    if (pos.DistanceTo(_mobileTouchStart) > 24f)
+                        _mobileTouchMoved = true;
+                    double now = Time.GetTicksMsec() / 1000.0;
+                    double dt = Math.Max(now - _lastDragTime, 0.001);
+                    _mobileDragVelocity = (Vector2)(pos - _prevTouchPos) / (float)dt;
+                    _prevTouchPos = pos;
+                    _lastDragTime = now;
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Byte && !Input.IsActionPressed("Move"))
+                        Input.ActionPress("Move");
+                }
             }
+            return;
         }
         base._Input(@event);
     }
@@ -326,6 +417,10 @@ public partial class Main : Node2D
         {
             Vector2I screenSize = DisplayServer.ScreenGetSize();
             Position = new Vector2(screenSize.X / 2 - mainCharacter.trueSize.X / 2, screenSize.Y - mainCharacter.trueSize.Y);
+        }
+        if (_isMobile)
+        {
+            AddChild(new MobileUI());
         }
         Callable.From(delegate
         {
@@ -622,7 +717,7 @@ public partial class Main : Node2D
         }
     }
 
-    private void RepositionAllItemsToMouseScreen()
+    public void RepositionAllItemsToMouseScreen()
     {
         if (spawnedItems.Count == 0)
         {
@@ -1702,7 +1797,7 @@ public partial class Main : Node2D
         isWalking = false;
     }
 
-        private Rect2I GetThinnerCollisionBox()
+        public Rect2I GetThinnerCollisionBox()
     {
         float num = 0.33f;
         if (_isMobile)

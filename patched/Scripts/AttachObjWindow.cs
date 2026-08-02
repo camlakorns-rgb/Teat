@@ -347,7 +347,7 @@ public partial class AttachObjWindow : Window
     {
         _ = Main.Instance.screenDataHandler;
         Vector2 attachmentMargin = attachObject.attachedItemInformation.attachmentMargin;
-        Vector2I position = parentWindow.Position;
+        Vector2I position = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? (Vector2I)Main.Instance.Position : parentWindow.Position;
         Vector2I size = parentWindow.Size;
         Vector2I trueSize = attachObject.trueSize;
         int num = position.X + size.X / 2 - trueSize.X / 2 + (int)attachmentMargin.X;

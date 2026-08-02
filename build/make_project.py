@@ -4,7 +4,7 @@ import os, shutil, sys
 
 ROOT = '/home/user/.cache/v9'
 STRIPPED = f'{ROOT}/stripped'
-PATCHED_V8 = '/home/user/.cache/teat/patched/Scripts'
+PATCHED_V8 = '/home/user/teat/repo/patched/Scripts'
 SRC = f'{ROOT}/src'
 PROJ = f'{ROOT}/proj'
 

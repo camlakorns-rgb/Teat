@@ -15,6 +15,8 @@ public partial class Main : Node2D
     private static bool _isMobileChecked = false;
     public static Vector2I _lastTouchPos = new Vector2I(0,0);
     public static readonly string V13_BUILD = "V13_ITEMDRAG_AWAYFIX_BUBBLEFIX";
+    public static readonly string V30_BUILD = "V30_BLACKSCREEN_ITEMSPAWN_FIX";
+    public static readonly string V30_BUILD2 = "V30_MOBILE_RENDERER_VISIBLE_FALSE";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
@@ -26,6 +28,36 @@ public partial class Main : Node2D
     private Vector2I _prevTouchPos;
     private double _lastDragTime;
     private Vector2I _savedTouchPos;
+    private int _resourceLoadRetries = 0;
+
+    public void TryLoadResources()
+    {
+        if (ResourceCache.Instance != null)
+        {
+            bool needLoad = false;
+            if (!ResourceCache.resourcesLoaded.ContainsKey(ResourceCache.ResourceTyping.ITEM) || ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Count == 0)
+                needLoad = true;
+            if (needLoad)
+            {
+                GD.Print("[Mobile] TryLoadResources attempt " + _resourceLoadRetries + " - calling LoadData");
+                ResourceCache.Instance.CallDeferred("LoadData");
+            }
+            else
+            {
+                GD.Print("[Mobile] ResourceCache already loaded: ITEM=" + ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Count);
+                return;
+            }
+        }
+        else
+        {
+            GD.Print("[Mobile] ResourceCache.Instance null, retrying...");
+        }
+        _resourceLoadRetries++;
+        if (_resourceLoadRetries < 20)
+        {
+            GetTree().CreateTimer(0.6).Timeout += () => TryLoadResources();
+        }
+    }
     // Item drag state
     private ItemWindow _grabbedItem;
     private Vector2I _itemGrabOffset;
@@ -48,10 +80,27 @@ public partial class Main : Node2D
         for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
             ItemWindow w = spawnedItems[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible && !w.CurrentlyPickedUp && new Rect2I(w.Position, w.Size).HasPoint(p))
+            if (!GodotObject.IsInstanceValid(w) || w.CurrentlyPickedUp)
+                continue;
+            bool logicallyVisible = _isMobile ? w.IsActiveForMobile : w.Visible;
+            if (logicallyVisible && new Rect2I(w.Position, w.Size).HasPoint(p))
                 return true;
         }
         return false;
+    }
+
+    public bool IsItemLogicallyVisible(ItemWindow w)
+    {
+        if (!GodotObject.IsInstanceValid(w)) return false;
+        if (_isMobile) return w.IsActiveForMobile;
+        return w.Visible;
+    }
+
+    public bool IsActorLogicallyVisible(ActorWindow w)
+    {
+        if (!GodotObject.IsInstanceValid(w)) return false;
+        if (_isMobile) return w.IsActiveForMobile;
+        return w.Visible;
     }
 
     public bool IsPointOnAnyActor(Vector2I p)
@@ -59,7 +108,9 @@ public partial class Main : Node2D
         for (int i = spawnedActors.Count - 1; i >= 0; i--)
         {
             ActorWindow w = spawnedActors[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(p))
+            if (!GodotObject.IsInstanceValid(w)) continue;
+            bool logicallyVisible = _isMobile ? w.IsActiveForMobile : w.Visible;
+            if (logicallyVisible && new Rect2I(w.Position, w.Size).HasPoint(p))
                 return true;
         }
         return false;
@@ -280,7 +331,9 @@ public partial class Main : Node2D
         for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
             ItemWindow w = spawnedItems[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible && !w.CurrentlyPickedUp)
+            if (!GodotObject.IsInstanceValid(w) || w.CurrentlyPickedUp) continue;
+            bool logicallyVisible = _isMobile ? w.IsActiveForMobile : w.Visible;
+            if (logicallyVisible)
             {
                 Rect2I itemRect = new Rect2I(w.Position, w.Size);
                 if (itemRect.HasPoint(pos))
@@ -640,10 +693,8 @@ public partial class Main : Node2D
                 spawnerActorTimer.WaitTime = 20f;
                 spawnerActorTimer.Start();
             }
-            if (ResourceCache.Instance != null)
-            {
-                ResourceCache.Instance.CallDeferred("LoadData");
-            }
+            _resourceLoadRetries = 0;
+            TryLoadResources();
         }
         Callable.From(delegate
         {
@@ -1255,7 +1306,15 @@ public partial class Main : Node2D
             }
             if (!ResourceCache.resourcesLoaded.ContainsKey(ResourceCache.ResourceTyping.ITEM) || ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Count == 0)
             {
-                GD.PrintErr("[Spawner] ITEM resources not ready yet - retrying in 5s");
+                GD.PrintErr("[Spawner] ITEM resources not ready yet - retrying in 5s (attempting LoadData again)");
+                if (ResourceCache.Instance != null)
+                {
+                    ResourceCache.Instance.CallDeferred("LoadData");
+                }
+                else
+                {
+                    TryLoadResources();
+                }
                 spawnerTimer.WaitTime = 5f;
                 spawnerTimer.Start();
                 return;
@@ -1482,7 +1541,7 @@ public partial class Main : Node2D
             where GodotObject.IsInstanceValid(item)
             where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
             where !item.itemObject.itemInformation.NoPassivePickup
-            where item.Visible
+            where IsItemLogicallyVisible(item)
             select item).ToList();
         if (possibleArray != null)
         {
@@ -1491,7 +1550,7 @@ public partial class Main : Node2D
                 where GodotObject.IsInstanceValid(item)
                 where settingPassivePlayMode || !item.itemObject.itemInformation.NontargetablePickup
                 where !item.itemObject.itemInformation.NoPassivePickup
-                where item.Visible
+                where IsItemLogicallyVisible(item)
                 select item).ToList();
         }
         if (list.Count == 0)
@@ -2064,7 +2123,7 @@ public partial class Main : Node2D
         Rect2I collisionBox = GetThinnerCollisionBox();
         int centerX = collisionBox.Position.X + collisionBox.Size.X / 2;
         List<ActorWindow> source = (from a in spawnedCompanions
-            where GodotObject.IsInstanceValid(a) && a.Visible && !a.inUse && !a.inUseByAttachment
+            where GodotObject.IsInstanceValid(a) && IsActorLogicallyVisible(a) && !a.inUse && !a.inUseByAttachment
             orderby Mathf.Abs(a.Position.X + a.Size.X / 2 - centerX)
             select a).ToList();
         if (hardLanding)
@@ -2093,7 +2152,7 @@ public partial class Main : Node2D
         int num = int.MaxValue;
         foreach (ItemWindow spawnedItem in spawnedItems)
         {
-            if (!GodotObject.IsInstanceValid(spawnedItem) || !spawnedItem.Visible || spawnedItem.CurrentlyPickedUp || !spawnedItem.itemObject.itemInformation.isUsableDroppedOn)
+            if (!GodotObject.IsInstanceValid(spawnedItem) || !IsItemLogicallyVisible(spawnedItem) || spawnedItem.CurrentlyPickedUp || !spawnedItem.itemObject.itemInformation.isUsableDroppedOn)
             {
                 continue;
             }

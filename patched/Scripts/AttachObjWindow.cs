@@ -261,6 +261,11 @@ public partial class AttachObjWindow : Window
 
     private void DelayedSetupFlag()
     {
+        if (Main._isMobile)
+        {
+            base.Transparent = true;
+            base.TransparentBg = true;
+        }
         base.Visible = true;
         _isSetup = true;
     }

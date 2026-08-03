@@ -30,6 +30,11 @@ public partial class ItemWindow : Window
 
 	private bool isSetup;
 
+	
+	public bool IsSetupPublic => isSetup;
+	public bool IsSetup => isSetup;
+	public bool IsActiveForMobile => isSetup && !CurrentlyPickedUp;
+
 	private Vector2 mouseOffset = Vector2.Zero;
 
 	private bool selected;
@@ -76,6 +81,8 @@ public partial class ItemWindow : Window
 		{
 			base.Visible = false;
 			base.MousePassthrough = true;
+			if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+				_mobileSpriteRoot.Visible = false;
 			return;
 		}
 		base.MousePassthrough = Main.Instance.settingPassivePlayMode;
@@ -133,7 +140,7 @@ public partial class ItemWindow : Window
 		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 		{
 			_mobileSpriteRoot.Position = (Vector2)base.Position;
-			_mobileSpriteRoot.Visible = base.Visible && !CurrentlyPickedUp;
+			_mobileSpriteRoot.Visible = IsActiveForMobile;
 			if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite))
 			{
 				if (itemObject != null && itemObject.spriteParentController != null && itemObject.spriteParentController.GetChildCount() > 0 && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
@@ -165,10 +172,12 @@ public partial class ItemWindow : Window
 		base.ProcessMode = ProcessModeEnum.Inherit;
 		isSetup = true;
 		
-		// Mobile renderer: create sprite at scene root to avoid Window flickering
+		// Mobile renderer: create sprite at scene root to avoid Window flickering (V30 fix: Visible=false to prevent black screen overlay)
 		if (Main._isMobile)
 		{
-			base.Visible = true;
+			base.Transparent = true;
+			base.TransparentBg = true;
+			base.Visible = false;
 			if (itemObject != null && itemObject.spriteParentController != null)
 			{
 				itemObject.spriteParentController.Visible = false;
@@ -187,8 +196,9 @@ public partial class ItemWindow : Window
 			
 			_mobileSpriteRoot = new Node2D();
 			_mobileSpriteRoot.Position = (Vector2)base.Position;
+			_mobileSpriteRoot.Visible = true;
 			_mobileSpriteRoot.AddChild(_mobileSprite);
-			GetTree().Root.AddChild(_mobileSpriteRoot);
+			try { GetTree().Root.AddChild(_mobileSpriteRoot); } catch { }
 		}
 		if (!Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Contains(itemObject.itemInformation.itemID))
 		{

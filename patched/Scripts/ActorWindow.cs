@@ -31,7 +31,12 @@ public partial class ActorWindow : Window
 
 	public float walkX = -1f;
 
-	// Mobile renderer: render NPC as sprite in scene root viewport to avoid Window flickering
+
+	private bool isSetup = false;
+	public bool IsSetup => isSetup;
+	public bool IsActiveForMobile => isSetup;
+
+		// Mobile renderer: render NPC as sprite in scene root viewport to avoid Window flickering
 	private Node2D _mobileSpriteRoot;
 	private AnimatedSprite2D _mobileSprite;
 
@@ -133,10 +138,13 @@ public partial class ActorWindow : Window
 		base.ProcessMode = ProcessModeEnum.Inherit;
 		setAIType = characterActor.characterInformation.AITyping;
 		
-		// Mobile renderer: create sprite at scene root to avoid Window flickering
+		isSetup = true;
+		// Mobile renderer: create sprite at scene root to avoid Window flickering (V30 fix: Visible=false)
 		if (Main._isMobile)
 		{
-			base.Visible = true;
+			base.Transparent = true;
+			base.TransparentBg = true;
+			base.Visible = false;
 			if (characterActor != null && characterActor.MainBody != null)
 			{
 				characterActor.MainBody.Visible = false;
@@ -155,10 +163,11 @@ public partial class ActorWindow : Window
 			
 			_mobileSpriteRoot = new Node2D();
 			_mobileSpriteRoot.Position = (Vector2)base.Position;
+			_mobileSpriteRoot.Visible = true;
 			_mobileSpriteRoot.AddChild(_mobileSprite);
 			
 			// Add to scene tree root (NOT Main.Instance) so it doesn't move with Byte
-			GetTree().Root.AddChild(_mobileSpriteRoot);
+			try { GetTree().Root.AddChild(_mobileSpriteRoot); } catch {}
 		}
 		else
 		{
@@ -308,7 +317,7 @@ public partial class ActorWindow : Window
 		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 		{
 			_mobileSpriteRoot.Position = (Vector2)base.Position;
-			_mobileSpriteRoot.Visible = base.Visible && characterActor != null && characterActor.Visible;
+			_mobileSpriteRoot.Visible = IsActiveForMobile && characterActor != null && characterActor.Visible;
 			if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite) && characterActor != null && characterActor.MainBody != null)
 			{
 				if (_mobileSprite.SpriteFrames != characterActor.MainBody.SpriteFrames)

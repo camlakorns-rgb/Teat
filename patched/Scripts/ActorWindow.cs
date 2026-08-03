@@ -125,13 +125,19 @@ public partial class ActorWindow : Window
         {
             string id = characterActor.characterInformation._itemID?.ToLower() ?? "";
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
+            GD.Print($"[BitDebug] Spawn ID={id} Name={name}");
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan") || id.Contains("1_bit"))
             {
-                float visualBoost = 4.2f; // V41 still small + one block high -> 4.2x + 35% ground
+                float visualBoost = 5.0f; // V42 Bit still small + cuck anim small - 5.0x + log
+                if (characterActor.spriteParentController != null)
+                {
+                    characterActor.spriteParentController.Scale *= visualBoost;
+                }
                 if (characterActor.MainBody != null)
                 {
                     characterActor.MainBody.Scale *= visualBoost;
                 }
+                GD.Print($"[BitDebug] Boosted {name} ID={id} to {visualBoost}x");
             }
         }
 		characterActor.SetupActor();

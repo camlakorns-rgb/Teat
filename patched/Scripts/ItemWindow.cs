@@ -151,8 +151,8 @@ public partial class ItemWindow : Window
 
 	private void FollowMouse()
 	{
-		Vector2I point = DisplayServer.MouseGetPosition();
-		Vector2 vector = DisplayServer.MouseGetPosition();
+		Vector2I point = Main._isMobile ? (Vector2I)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition();
+		Vector2 vector = Main._isMobile ? (Vector2)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition();
 		itemMouseVelocity = (vector - itemLastMousePos) / (float)GetProcessDeltaTime();
 		itemLastMousePos = vector;
 		int screenCount = DisplayServer.GetScreenCount();
@@ -186,8 +186,8 @@ public partial class ItemWindow : Window
 			selected = true;
 			Main.Instance.SomethingHasBeenGrabbed = true;
 			Main.Instance.mainWindow.AlwaysOnTop = false;
-			mouseOffset = DisplayServer.WindowGetPosition(GetWindowId()) - DisplayServer.MouseGetPosition();
-			itemLastMousePos = DisplayServer.MouseGetPosition();
+			mouseOffset = Main._isMobile ? (Vector2)(base.Position - Main.Instance.MobileMousePos()) : DisplayServer.WindowGetPosition(GetWindowId()) - DisplayServer.MouseGetPosition();
+			itemLastMousePos = Main._isMobile ? (Vector2)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition();
 			itemMouseVelocity = Vector2.Zero;
 			UpdateCombinationShaders(enable: true);
 		}

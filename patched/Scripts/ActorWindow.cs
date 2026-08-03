@@ -451,19 +451,20 @@ public partial class ActorWindow : Window
 
 	private void HandleCompanionAI(double delta)
 	{
+		bool shouldShow = true;
 		if (!Main.Instance.mainCharacter.Visible && inUse)
 		{
-			base.Visible = false;
+			shouldShow = false;
 		}
 		else if (inUseByAttachment)
 		{
-			base.Visible = false;
+			shouldShow = false;
 		}
 		else
 		{
-			base.Visible = true;
 			inUse = false;
 		}
+		if (base.Visible != shouldShow) base.Visible = shouldShow;
 		if (inAggro)
 		{
 			IEnumerable<AttachDataRes> enumerable = characterActor.characterInformation.overrideAnimation.Concat(possibleAggroOverrideAnimations);
@@ -531,7 +532,7 @@ public partial class ActorWindow : Window
 
 	private void HandleEnemyAI(double delta)
 	{
-		base.Visible = true;
+		if (!base.Visible) base.Visible = true;
 		HandleEnemyMouseFlee(delta);
 		if (IsOverlappingTargetWindow())
 		{

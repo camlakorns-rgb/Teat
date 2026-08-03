@@ -55,7 +55,7 @@ public partial class MobileUI : CanvasLayer
         {
             return;
         }
-        bool occupied = m.Pause != null || m.Terminal != null || (m.spawnedMinigames != null && m.spawnedMinigames.Count > 0);
+        bool occupied = m.Pause != null || m.Terminal != null || (m.spawnedMinigames != null && m.spawnedMinigames.Count > 0) || (m.Magnifier != null && GodotObject.IsInstanceValid(m.Magnifier));
         if (occupied && Visible)
         {
             // Bar is being covered by a window: make sure no action stays stuck
@@ -91,8 +91,8 @@ public partial class MobileUI : CanvasLayer
     {
         Button b = new Button();
         b.Text = label;
-        b.CustomMinimumSize = new Vector2(92, 44);
-        b.AddThemeFontSizeOverride("font_size", 13);
+        b.CustomMinimumSize = new Vector2(100, 50);
+        b.AddThemeFontSizeOverride("font_size", 14);
         StyleBoxFlat normal = new StyleBoxFlat();
         normal.BgColor = new Color(0.08f, 0.08f, 0.14f, 0.72f);
         normal.BorderColor = new Color(1f, 1f, 1f, 0.25f);

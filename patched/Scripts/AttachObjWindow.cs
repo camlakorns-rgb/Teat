@@ -274,10 +274,16 @@ public partial class AttachObjWindow : Window
         {
             // On mobile the main window is fullscreen at (0,0); position the bubble
             // relative to Byte's actual Position, centered above her head.
+            // Ignore attachmentMargin on mobile (it's designed for desktop multi-monitor
+            // layout and causes offset on mobile).
             Vector2I mainPos = (Vector2I)Main.Instance.Position;
             Vector2I mainSize = Main.Instance.mainCharacter.trueSize;
-            int bx = mainPos.X + mainSize.X / 2 - trueSize.X / 2 + (int)attachmentMargin.X;
-            int by = mainPos.Y - trueSize.Y - 20 + (int)attachmentMargin.Y;
+            int bx = mainPos.X + mainSize.X / 2 - trueSize.X / 2;
+            int by = mainPos.Y - trueSize.Y - 20;
+            // Clamp to screen
+            Vector2I screenSize = DisplayServer.ScreenGetSize();
+            if (bx < 0) bx = 0;
+            if (bx + trueSize.X > screenSize.X) bx = screenSize.X - trueSize.X;
             if (by < 0) by = 0;
             base.Position = new Vector2I(bx, by);
             base.MousePassthrough = true;

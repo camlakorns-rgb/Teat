@@ -118,19 +118,20 @@ public partial class ActorWindow : Window
 			characterActor.characterInformation = characterData;
 		}
 		        characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
-        // V34: Bit and Trojan tiny and floating
-        // V35: still small + floating higher - boosted too much and mismatched sizes
-        // V37: Bit higher and smaller - boost 4.5x and full screen ground
+        // V39 Deep Dive: Bit small + top - Qubit 128x128 scale 1.75 same as Byte (224px) -> tiny on 1080p
+        // Previous boost increased trueSize which moves ground up: ground = screenH - trueSize, larger trueSize = higher (floating top)
+        // Fix: keep trueSize original for ground, boost ONLY visual scale
         if (Main._isMobile && characterActor.characterInformation != null)
         {
             string id = characterActor.characterInformation._itemID?.ToLower() ?? "";
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan") || id.Contains("1_bit"))
             {
-                float boost = 4.5f;
-                characterActor.trueSize = (Vector2I)((Vector2)characterActor.trueSize * boost);
+                float visualBoost = 2.2f;
                 if (characterActor.MainBody != null)
-                    characterActor.MainBody.Scale *= boost;
+                {
+                    characterActor.MainBody.Scale *= visualBoost;
+                }
             }
         }
 		characterActor.SetupActor();
@@ -139,7 +140,16 @@ public partial class ActorWindow : Window
 		if (overridePos == Vector2I.Zero)
 		{
 			int pos = ((GD.RandRange(0, 1) == 0) ? (Main.Instance.screenDataHandler.EffectiveLeftX - (int)spawnMargin.X) : (Main.Instance.screenDataHandler.EffectiveRightX + (int)spawnMargin.X));
-			int y = DisplayServer.ScreenGetUsableRect(Main.Instance.screenDataHandler.screenIndex).End.Y - characterActor.trueSize.Y;
+			int y;
+			if (Main._isMobile)
+			{
+				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
+				y = screenSize.Y - characterActor.trueSize.Y;
+			}
+			else
+			{
+				y = DisplayServer.ScreenGetUsableRect(Main.Instance.screenDataHandler.screenIndex).End.Y - characterActor.trueSize.Y;
+			}
 			int num = Main.Instance.screenDataHandler.ClampAcrossAllScreensX(pos, characterActor.trueSize.X);
 			base.Position = new Vector2I(num, y);
 			walkX = num;

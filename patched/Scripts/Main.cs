@@ -100,6 +100,9 @@ public partial class Main : Node2D
         }
         else
         {
+            mainCharacter.Visible = true;
+            Vector2I screenSize = DisplayServer.ScreenGetSize();
+            Position = new Vector2(screenSize.X / 2 - mainCharacter.trueSize.X / 2, screenSize.Y - mainCharacter.trueSize.Y);
             mainCharacter.ForceMainBodyState(Character.MainBodyStates.Forced_Animation, "Pet", 0.5f);
         }
         saveHandler.SaveSettings();
@@ -461,6 +464,10 @@ public partial class Main : Node2D
             {
                 spawnerActorTimer.WaitTime = 20f;
                 spawnerActorTimer.Start();
+            }
+            if (ResourceCache.Instance != null)
+            {
+                ResourceCache.Instance.CallDeferred("LoadData");
             }
         }
         Callable.From(delegate

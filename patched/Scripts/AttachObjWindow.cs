@@ -106,7 +106,8 @@ public partial class AttachObjWindow : Window
             }
             if (Input.IsActionJustPressed("Move") && !FadeKill.IsPlaying())
             {
-                if (attachObject.attachedItemInformation.popupURL != "")
+                // Don't open URLs on mobile — just dismiss the popup
+                if (!Main._isMobile && attachObject.attachedItemInformation.popupURL != "")
                 {
                     OS.ShellOpen(attachObject.attachedItemInformation.popupURL);
                 }
@@ -171,7 +172,10 @@ public partial class AttachObjWindow : Window
             break;
         case AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW:
             attachObject.SetupImageAttachment();
-            base.MousePassthrough = false;
+            // On mobile, let touches pass through to Main._Input which will
+            // detect taps on this window and press Pet to dismiss it.
+            // On desktop, keep MousePassthrough=false so the window captures clicks.
+            base.MousePassthrough = Main._isMobile;
             break;
         }
         base.MinSize = attachObject.trueSize;

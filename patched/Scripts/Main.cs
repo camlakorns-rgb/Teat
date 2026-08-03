@@ -64,6 +64,22 @@ public partial class Main : Node2D
         return false;
     }
 
+    // Find a RANDOM_CLICKED_WINDOW popup attachment at the given point.
+    // These are the "popup ads" that bounce around the screen.
+    private AttachObjWindow FindPopupAttachmentAtPoint(Vector2I p)
+    {
+        for (int i = spawnedAttachments.Count - 1; i >= 0; i--)
+        {
+            AttachObjWindow w = spawnedAttachments[i];
+            if (GodotObject.IsInstanceValid(w) && w.Visible
+                && w.attachObject != null
+                && w.attachObject.attachedItemInformation.attachmentTyping == AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW
+                && new Rect2I(w.Position, w.Size).HasPoint(p))
+                return w;
+        }
+        return null;
+    }
+
     // Fake a touch at Byte's center so hit-tested actions (Screen_Lock, Despawn)
     // work when triggered from the on-screen button bar.
     public void MobileActionOnByte(string action, bool pressed)
@@ -131,6 +147,15 @@ public partial class Main : Node2D
                 {
                     if (MobileUI.IsPointInUI(pos))
                     {
+                        return;
+                    }
+                    // Check for popup attachments first ("ads" that bounce around)
+                    AttachObjWindow popupAtPoint = FindPopupAttachmentAtPoint(pos);
+                    if (popupAtPoint != null)
+                    {
+                        _mobileTouchTarget = MobileTouchTargetKind.None;
+                        Input.ActionPress("Pet");
+                        Callable.From(() => Input.ActionRelease("Pet")).CallDeferred();
                         return;
                     }
                     _mobileTouchIndex = touch.Index;

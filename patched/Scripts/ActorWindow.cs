@@ -139,12 +139,17 @@ public partial class ActorWindow : Window
 		setAIType = characterActor.characterInformation.AITyping;
 		
 		isSetup = true;
-		// Mobile renderer: create sprite at scene root to avoid Window flickering (V30 fix: Visible=false)
+		// Mobile renderer: V30 Visible=false, V33 fix Bit floating
 		if (Main._isMobile)
 		{
 			base.Transparent = true;
 			base.TransparentBg = true;
 			base.Visible = false;
+			// V33: reset actor sprite offset to avoid floating (Bit was floating)
+			if (characterActor != null && characterActor.spriteParentController != null)
+			{
+				characterActor.spriteParentController.Position = Vector2.Zero;
+			}
 			if (characterActor != null && characterActor.MainBody != null)
 			{
 				characterActor.MainBody.Visible = false;

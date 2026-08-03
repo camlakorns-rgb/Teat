@@ -49,10 +49,6 @@ public partial class ActorWindow : Window
 
 	private Rect2I cachedThinBox;
 
-	// Mobile rendering: render NPC as Sprite2D in main viewport instead of Window
-	private Node2D _mobileContainer;
-	private AnimatedSprite2D _mobileAnimSprite;
-
 	private double spawnTime;
 
 	public bool inUse;
@@ -131,26 +127,8 @@ public partial class ActorWindow : Window
 			walkX = overridePos.X;
 		}
 		base.ProcessMode = ProcessModeEnum.Inherit;
+		base.Visible = true;
 		setAIType = characterActor.characterInformation.AITyping;
-		
-		// Mobile rendering: create sprite in main viewport instead of Window surface
-		if (Main._isMobile)
-		{
-			base.Visible = false;
-			_mobileAnimSprite = new AnimatedSprite2D();
-			_mobileAnimSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
-			_mobileAnimSprite.Position = new Vector2(characterActor.trueSize.X / 2f, characterActor.trueSize.Y / 2f);
-			_mobileAnimSprite.Scale = characterActor.MainBody.Scale;
-			
-			_mobileContainer = new Node2D();
-			_mobileContainer.Position = base.Position;
-			_mobileContainer.AddChild(_mobileAnimSprite);
-			Main.Instance.AddChild(_mobileContainer);
-		}
-		else
-		{
-			base.Visible = true;
-		}
 		if (setAIType == CharacterInfoDataRes.AITypes.COMPANION)
 		{
 			randomAnimationTimer.Start();
@@ -196,7 +174,7 @@ public partial class ActorWindow : Window
 
 	private void HandlePop()
 	{
-		if (!cachedThinBox.HasPoint(Main._isMobile ? Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
+		if (!cachedThinBox.HasPoint(Main._isMobile ? (Vector2I)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
 		{
 			return;
 		}
@@ -256,8 +234,6 @@ public partial class ActorWindow : Window
 		if (popShader != null)
 		{
 			characterActor.MainBody.Play("Idle");
-			if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
-				_mobileAnimSprite.Play("Idle");
 			if (!(popProgress >= 0f))
 			{
 				return;
@@ -318,8 +294,6 @@ public partial class ActorWindow : Window
 			if (characterActor.MainBody.Animation == (StringName)"Walk")
 			{
 				characterActor.MainBody.Play("Idle");
-				if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
-					_mobileAnimSprite.Play("Idle");
 			}
 			return;
 		}
@@ -364,8 +338,6 @@ public partial class ActorWindow : Window
 			bool flipH = (characterActor.characterInformation.flipSpriteH ? (num2 == 1) : (num2 == -1));
 			characterActor.FlipHSpriteTo(flipH);
 			characterActor.MainBody.Play("Walk");
-			if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
-				_mobileAnimSprite.Play("Walk");
 			int currentScreen = base.CurrentScreen;
 			if (currentScreen != cachedActorScreenIndex)
 			{
@@ -373,21 +345,7 @@ public partial class ActorWindow : Window
 				cachedActorScreenRect = DisplayServer.ScreenGetUsableRect(currentScreen);
 			}
 			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
-			if (Main._isMobile)
-			{
-				// Update mobile sprite container instead of Window position
-				if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
-					_mobileContainer.Position = new Vector2(newPos.X, newPos.Y);
-				if (_mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
-				{
-					_mobileAnimSprite.Play(characterActor.MainBody.Animation);
-					_mobileAnimSprite.FlipH = characterActor.MainBody.FlipH;
-				}
-			}
-			else
-			{
-				if (newPos != base.Position) base.Position = newPos;
-			}
+			if (newPos != base.Position) base.Position = newPos;
 			cachedThinBox = ComputeThinnerCollisionBox();
 		}
 		else
@@ -397,8 +355,6 @@ public partial class ActorWindow : Window
 			if (characterActor.MainBody.Animation == (StringName)"Walk")
 			{
 				characterActor.MainBody.Play("Idle");
-				if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
-					_mobileAnimSprite.Play("Idle");
 			}
 		}
 	}
@@ -422,6 +378,7 @@ public partial class ActorWindow : Window
 		if (randomDistance < 0f)
 		{
 			randomDistance = (float)GD.RandRange(distanceRanges.X, distanceRanges.Y);
+			_ = Main.Instance.mainWindow.Position;
 			int x = characterActor.trueSize.X;
 			for (int i = 0; i < 8; i++)
 			{
@@ -437,7 +394,7 @@ public partial class ActorWindow : Window
 			}
 		}
 		float num4 = (float)Main.Instance.mainCharacter.trueSize.X * randomDistance;
-		if (Mathf.Abs(walkX - (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X)) > num4 * 0.9f && characterActor.MainBody.Animation != (StringName)"Walk")
+		if (Mathf.Abs(walkX - (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X)) >= num4 && characterActor.MainBody.Animation != (StringName)"Walk")
 		{
 			return (float)Main.Instance.mainCharacter.trueSize.X * distanceRanges.Y;
 		}
@@ -464,7 +421,7 @@ public partial class ActorWindow : Window
 				float num5;
 				if (spawnedCompanion.randomDistance >= 0f)
 				{
-					float num3 = (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X) + (float)Main.Instance.mainCharacter.trueSize.X / 2f;
+					float num3 = (float)Main.Instance.mainWindow.Position.X + (float)Main.Instance.mainCharacter.trueSize.X / 2f;
 					float companionEffectiveX = GetCompanionEffectiveX(spawnedCompanion);
 					float num4 = ((num3 > companionEffectiveX) ? (-1f) : 1f);
 					num5 = num3 + num4 * (float)Main.Instance.mainCharacter.trueSize.X * spawnedCompanion.randomDistance - (float)spawnedCompanion.characterActor.trueSize.X / 2f;
@@ -494,31 +451,18 @@ public partial class ActorWindow : Window
 
 	private void HandleCompanionAI(double delta)
 	{
-		if (Main._isMobile)
+		if (!Main.Instance.mainCharacter.Visible && inUse)
 		{
-			// On mobile, control visibility via mobile sprite, not Window
-			if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
-			{
-				bool shouldShow = (Main.Instance.mainCharacter.Visible || !inUse) && !inUseByAttachment;
-				_mobileContainer.Visible = shouldShow;
-			}
-			if (!inUseByAttachment) inUse = false;
+			base.Visible = false;
+		}
+		else if (inUseByAttachment)
+		{
+			base.Visible = false;
 		}
 		else
 		{
-			if (!Main.Instance.mainCharacter.Visible && inUse)
-			{
-				base.Visible = false;
-			}
-			else if (inUseByAttachment)
-			{
-				base.Visible = false;
-			}
-			else
-			{
-				base.Visible = true;
-				inUse = false;
-			}
+			base.Visible = true;
+			inUse = false;
 		}
 		if (inAggro)
 		{
@@ -547,7 +491,7 @@ public partial class ActorWindow : Window
 			return;
 		}
 		HandleCindeshCompanionKinks();
-		if (Input.IsActionJustPressed("Pet") && Main.Instance.mainCharacter.Visible && !Main.Instance.SomethingHasBeenGrabbed && cachedThinBox.HasPoint(Main._isMobile ? Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
+		if (Input.IsActionJustPressed("Pet") && Main.Instance.mainCharacter.Visible && !Main.Instance.SomethingHasBeenGrabbed && cachedThinBox.HasPoint(Main._isMobile ? (Vector2I)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
 		{
 			DialogueDataRes dialogueDataRes = Main.Instance.PickDialogue(characterActor.characterInformation.interactionTexts);
 			if (dialogueDataRes != null)
@@ -572,7 +516,7 @@ public partial class ActorWindow : Window
 			}
 		}
 		float num = Main.Instance.mainCharacter.mouseVelocity.Length();
-		if (IsOverlappingTargetWindow() && Input.IsActionJustReleased("Move") && IsInteractable() && num < 800f && new Rect2I(Main._isMobile ? (Vector2I)Main.Instance.Position : Main.Instance.mainWindow.Position, Main._isMobile ? Main.Instance.mainCharacter.trueSize : Main.Instance.mainWindow.Size).HasPoint(Main._isMobile ? Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
+		if (IsOverlappingTargetWindow() && Input.IsActionJustReleased("Move") && IsInteractable() && num < 800f && new Rect2I(Main._isMobile ? (Vector2I)Main.Instance.Position : Main.Instance.mainWindow.Position, Main._isMobile ? Main.Instance.mainCharacter.trueSize : Main.Instance.mainWindow.Size).HasPoint(Main._isMobile ? (Vector2I)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
 		{
 			Main.Instance.ClearAllAttachments();
 			Main.Instance.ForceDropCharacter();
@@ -587,15 +531,7 @@ public partial class ActorWindow : Window
 
 	private void HandleEnemyAI(double delta)
 	{
-		if (Main._isMobile)
-		{
-			if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
-				_mobileContainer.Visible = true;
-		}
-		else
-		{
-			base.Visible = true;
-		}
+		base.Visible = true;
 		HandleEnemyMouseFlee(delta);
 		if (IsOverlappingTargetWindow())
 		{
@@ -717,7 +653,7 @@ public partial class ActorWindow : Window
 				fleeTimer = 0.0;
 			}
 		}
-		else if (cachedThinBox.HasPoint(Main._isMobile ? Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
+		else if (cachedThinBox.HasPoint(Main._isMobile ? (Vector2I)Main.Instance.MobileMousePos() : DisplayServer.MouseGetPosition()))
 		{
 			mouseLingerTimer += delta;
 			if (mouseLingerTimer >= 0.4000000059604645)
@@ -846,7 +782,7 @@ public partial class ActorWindow : Window
 				characterActor.mainBodyTimer.Stop();
 			}
 		}
-		else if (characterActor.mainBodyTimer.IsStopped() && characterActor.characterInformation.SpeicalAnimations != null)
+		else if (characterActor.mainBodyTimer.IsStopped())
 		{
 			string text = characterActor.characterInformation.SpeicalAnimations?.animationName ?? "";
 			if (!string.IsNullOrEmpty(text) && (characterActor.MainBody.Animation == (StringName)text || characterActor.MainBody.Animation == (StringName)(text + "_Transition")))

@@ -118,17 +118,19 @@ public partial class ActorWindow : Window
 			characterActor.characterInformation = characterData;
 		}
 		        characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
-        // V34: Bit and Trojan were tiny and floating - boost their size on mobile
-        // V35: even smaller still + floating one block higher - boost more and fix ground
+        // V34: Bit and Trojan tiny and floating
+        // V35: still small + floating higher - boosted too much and mismatched sizes
+        // V36: revert byte back, make Bit same size factor for trueSize and visual, no extra ground offset
         if (Main._isMobile && characterActor.characterInformation != null)
         {
             string id = characterActor.characterInformation._itemID?.ToLower() ?? "";
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
             {
-                characterActor.trueSize = (Vector2I)((Vector2)characterActor.trueSize * 2.8f);
+                float boost = 3.0f;
+                characterActor.trueSize = (Vector2I)((Vector2)characterActor.trueSize * boost);
                 if (characterActor.MainBody != null)
-                    characterActor.MainBody.Scale *= 2.2f;
+                    characterActor.MainBody.Scale *= boost;
             }
         }
 		characterActor.SetupActor();
@@ -422,8 +424,7 @@ public partial class ActorWindow : Window
 				cachedActorScreenIndex = currentScreen;
 				cachedActorScreenRect = DisplayServer.ScreenGetUsableRect(currentScreen);
 			}
-			int groundY = cachedActorScreenRect.End.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.15f);
-			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), groundY);
+			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
 			if (newPos != base.Position) base.Position = newPos;
 			// Sync mobile sprite
 			if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))

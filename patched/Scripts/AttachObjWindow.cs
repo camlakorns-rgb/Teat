@@ -80,6 +80,8 @@ public partial class AttachObjWindow : Window
         _maxSpan = GD.RandRange(_maxSpamLifeSpanInPassivePlay.X, _maxSpamLifeSpanInPassivePlay.Y);
     }
 
+    private float _savedBytePosX;  // Save Byte's position before OVERRIDE animation
+
     public override void _Process(double delta)
     {
         if (parentWindow == null || !GodotObject.IsInstanceValid(parentWindow))
@@ -174,6 +176,8 @@ public partial class AttachObjWindow : Window
             break;
         case AttachDataRes.AttachmentType.OVERRIDE:
             attachObject.SetupImageAttachment();
+            // Save Byte's position before hiding her for the animation
+            _savedBytePosX = Main.Instance.Position.X;
             if (parentWindow == Main.Instance.mainWindow)
             {
                 Main.Instance.AbortActivePickup();
@@ -381,7 +385,8 @@ public partial class AttachObjWindow : Window
         _ = Main.Instance.screenDataHandler;
         Vector2 attachmentMargin = attachObject.attachedItemInformation.attachmentMargin;
         Vector2I position = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? (Vector2I)Main.Instance.Position : parentWindow.Position;
-        Vector2I size = parentWindow.Size;
+        // On mobile, use Byte's actual size instead of fullscreen window size
+        Vector2I size = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? Main.Instance.mainCharacter.trueSize : parentWindow.Size;
         Vector2I trueSize = attachObject.trueSize;
         int num = position.X + size.X / 2 - trueSize.X / 2 + (int)attachmentMargin.X;
         int num2 = position.Y + size.Y / 2 - trueSize.Y / 2 + (int)attachmentMargin.Y;
@@ -453,7 +458,7 @@ public partial class AttachObjWindow : Window
             }
             if (_forcedMovementWalking)
             {
-                int x = parentWindow.Size.X;
+                int x = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? Main.Instance.mainCharacter.trueSize.X : parentWindow.Size.X;
                 int effectiveLeftX = Main.Instance.screenDataHandler.EffectiveLeftX;
                 int max = Main.Instance.screenDataHandler.EffectiveRightX - x;
                 _forcedMovementX += (float)((double)attachObject.attachedItemInformation.ForcedWalkSpeed * delta * (double)_forcedMoveDirection);
@@ -485,6 +490,11 @@ public partial class AttachObjWindow : Window
             return;
         }
         _forcedMovementActive = false;
+        // Restore Byte's position on mobile
+        if (Main._isMobile && parentWindow == Main.Instance.mainWindow)
+        {
+            Main.Instance.Position = new Vector2(_savedBytePosX, Main.Instance.Position.Y);
+        }
         if (parentWindow != null && GodotObject.IsInstanceValid(parentWindow))
         {
             if (parentWindow == Main.Instance.mainWindow)
@@ -650,6 +660,11 @@ public partial class AttachObjWindow : Window
             else if (parentWindow == Main.Instance.mainWindow)
             {
                 Main.Instance.mainCharacter.Visible = true;
+                // Restore Byte's saved position on mobile
+                if (Main._isMobile)
+                {
+                    Main.Instance.Position = new Vector2(_savedBytePosX, Main.Instance.Position.Y);
+                }
             }
             else
             {

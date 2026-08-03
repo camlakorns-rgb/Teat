@@ -129,7 +129,7 @@ public partial class ActorWindow : Window
             GD.Print($"[BitDebug] Actor spawned ID={id} Name={name} Size={characterActor.trueSize}");
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
             {
-                                float visualBoost = 0.9f; // V45: shorter than Byte (90%), fix blurry from upscaling
+                                float visualBoost = 1.4f; // V46: still tiny and floating again - 0.9x too small, need 1.4x shorter than Byte 1.6x
                 if (characterActor.spriteParentController != null)
                     characterActor.spriteParentController.Scale = new Vector2(visualBoost, visualBoost);
                 if (characterActor.MainBody != null)

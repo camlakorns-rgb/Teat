@@ -32,6 +32,7 @@ public partial class Main : Node2D
     public static readonly string V43_BUILD = "V43_BIT_STILL_SMALL_FLOATING";
     public static readonly string V44_BUILD = "V44_HUGE_MATCH_ANIM";
     public static readonly string V45_BUILD = "V45_BIT_SHORTER_GROUNDED_SPAWN_MENU";
+    public static readonly string V46_BUILD = "V46_BIT_TINY_FLOATING_SPAWN_MENU_FIX";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
@@ -679,6 +680,16 @@ public partial class Main : Node2D
         mainWindow = GetWindow();
         if (!_isMobile) mainWindow.TransparentBg = true;
         saveHandler.AttemptLoad();
+        // V46: Bit tiny and floating again + Byte should be bigger than tiny but Bit shorter than Byte
+        if (_isMobile)
+        {
+            // Byte 1.6x on mobile to not be tiny, Bit will be 1.4x (shorter than Byte)
+            if (settingSpriteScaler < 1.5f)
+            {
+                settingSpriteScaler = 1.6f;
+                saveHandler.SaveSettings();
+            }
+        }
         mainCharacter.trueSize = (Vector2I)(mainCharacter.characterInformation.characterSize * mainCharacter.characterInformation.characterScale * settingSpriteScaler);
         mainCharacter.SetupCharacter();
         screenDataHandler.UpdateScreenInfo(mainCharacter.trueSize);

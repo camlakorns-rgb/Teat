@@ -37,8 +37,9 @@ public partial class MobileUI : CanvasLayer
         Main m = Main.Instance;
         if (m == null) return;
         bool occupied = m.Pause != null || m.Terminal != null || (m.spawnedMinigames != null && m.spawnedMinigames.Count > 0) || (m.Magnifier != null && GodotObject.IsInstanceValid(m.Magnifier));
-        bool spawnOpen = _spawnPanel != null && GodotObject.IsInstanceValid(_spawnPanel) && _spawnPanel.Visible;
-        if ((occupied || spawnOpen) && Visible)
+        bool spawnOpen = _spawnPanel != null && GodotObject.IsInstanceValid(_spawnPanel);
+
+        if (occupied && _box != null && _box.Visible)
         {
             foreach (string a in _managedActions)
             {
@@ -46,46 +47,42 @@ public partial class MobileUI : CanvasLayer
                     Input.ActionRelease(a);
             }
         }
-        // Hide bar when spawn menu open or other windows open
-        Visible = !occupied && !spawnOpen;
-        // But keep spawn panel visible
-        if (_spawnPanel != null)
-            _spawnPanel.Visible = spawnOpen || !occupied;
+
+        // Show/hide bar: hide when pause/terminal/minigame open, but keep visible when only spawn menu open? Actually hide bar when spawn open to avoid clutter
+        if (_box != null)
+            _box.Visible = !occupied && !spawnOpen;
+        
+        // Spawn panel visibility stays as is (don't auto-hide)
+        // It will be freed only via CLOSE button
     }
 
     public static bool IsPointInUI(Vector2I pos)
     {
         if (Instance == null) return false;
-        // Check box
+        // Check main button box
         if (Instance._box != null && Instance._box.Visible)
         {
-            foreach (Node child in Instance._box.GetChildren())
-            {
-                if (child is Control c && c.GetGlobalRect().HasPoint(pos))
-                    return true;
-            }
+            if (IsPointInControlRecursive(Instance._box, pos))
+                return true;
         }
         // Check spawn panel
-        if (Instance._spawnPanel != null && Instance._spawnPanel.Visible)
+        if (Instance._spawnPanel != null && GodotObject.IsInstanceValid(Instance._spawnPanel) && Instance._spawnPanel.Visible)
         {
-            // If point inside spawn panel, consider UI
-            if (Instance._spawnPanel.GetGlobalRect().HasPoint(pos))
+            if (IsPointInControlRecursive(Instance._spawnPanel, pos))
                 return true;
-            // Also check its children
-            foreach (Node child in Instance._spawnPanel.GetChildren())
-            {
-                if (child is Control cc && cc.GetGlobalRect().HasPoint(pos))
-                    return true;
-                // Recursive check for scroll container children
-                if (child is ScrollContainer sc)
-                {
-                    foreach (Node sub in sc.GetChildren())
-                    {
-                        if (sub is Control scChild && scChild.GetGlobalRect().HasPoint(pos))
-                            return true;
-                    }
-                }
-            }
+        }
+        return false;
+    }
+
+    private static bool IsPointInControlRecursive(Control ctrl, Vector2I pos)
+    {
+        if (ctrl == null || !ctrl.Visible) return false;
+        if (ctrl.GetGlobalRect().HasPoint(pos))
+            return true;
+        foreach (Node child in ctrl.GetChildren())
+        {
+            if (child is Control c && IsPointInControlRecursive(c, pos))
+                return true;
         }
         return false;
     }
@@ -108,6 +105,8 @@ public partial class MobileUI : CanvasLayer
         StyleBoxFlat pressed = (StyleBoxFlat)normal.Duplicate();
         pressed.BgColor = new Color(0.3f, 0.3f, 0.45f, 0.9f);
         b.AddThemeStyleboxOverride("pressed", pressed);
+        b.MouseFilter = Control.MouseFilterEnum.Stop;
+        b.MouseDefaultCursorShape = Control.CursorShape.PointingHand;
         return b;
     }
 
@@ -165,42 +164,45 @@ public partial class MobileUI : CanvasLayer
 
     private void CreateSpawnMenu()
     {
-        // Root panel
         Panel panel = new Panel();
+        panel.Name = "SpawnMenu";
         panel.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        panel.OffsetLeft = 20;
-        panel.OffsetTop = 80;
-        panel.OffsetRight = -20;
-        panel.OffsetBottom = -20;
+        panel.OffsetLeft = 16;
+        panel.OffsetTop = 16;
+        panel.OffsetRight = -16;
+        panel.OffsetBottom = -16;
         StyleBoxFlat bg = new StyleBoxFlat();
-        bg.BgColor = new Color(0.05f, 0.05f, 0.08f, 0.88f);
+        bg.BgColor = new Color(0.05f, 0.05f, 0.08f, 0.92f);
         bg.SetCornerRadiusAll(12);
         bg.SetBorderWidthAll(1);
         bg.BorderColor = new Color(1f, 1f, 1f, 0.2f);
         panel.AddThemeStyleboxOverride("panel", bg);
         panel.ProcessMode = ProcessModeEnum.Always;
+        panel.MouseFilter = Control.MouseFilterEnum.Stop;
         AddChild(panel);
         _spawnPanel = panel;
 
         VBoxContainer vbox = new VBoxContainer();
         vbox.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-        vbox.OffsetLeft = 10;
-        vbox.OffsetTop = 10;
-        vbox.OffsetRight = -10;
-        vbox.OffsetBottom = -10;
+        vbox.OffsetLeft = 12;
+        vbox.OffsetTop = 12;
+        vbox.OffsetRight = -12;
+        vbox.OffsetBottom = -12;
         vbox.AddThemeConstantOverride("separation", 8);
+        vbox.MouseFilter = Control.MouseFilterEnum.Pass;
         panel.AddChild(vbox);
 
-        // Header
         HBoxContainer header = new HBoxContainer();
+        header.MouseFilter = Control.MouseFilterEnum.Pass;
         Label title = new Label();
-        title.Text = "Spawn Items / Actors";
-        title.AddThemeFontSizeOverride("font_size", 18);
+        title.Text = "Spawn Items / Actors (Tap to spawn at Byte)";
+        title.AddThemeFontSizeOverride("font_size", 16);
+        title.MouseFilter = Control.MouseFilterEnum.Ignore;
         header.AddChild(title);
-        // Spacer
         Control spacer = new Control();
         spacer.CustomMinimumSize = new Vector2(20, 0);
         spacer.SizeFlagsHorizontal = Control.SizeFlags.Expand;
+        spacer.MouseFilter = Control.MouseFilterEnum.Ignore;
         header.AddChild(spacer);
         Button close = MakeButton("CLOSE");
         close.CustomMinimumSize = new Vector2(80, 40);
@@ -215,32 +217,37 @@ public partial class MobileUI : CanvasLayer
         header.AddChild(close);
         vbox.AddChild(header);
 
-        // Buttons row: Spawn random item, Spawn random actor
         HBoxContainer quickRow = new HBoxContainer();
         quickRow.AddThemeConstantOverride("separation", 8);
+        quickRow.MouseFilter = Control.MouseFilterEnum.Pass;
         Button randItem = MakeButton("Random Item");
+        randItem.CustomMinimumSize = new Vector2(0, 40);
+        randItem.SizeFlagsHorizontal = Control.SizeFlags.Expand;
         randItem.Pressed += () =>
         {
             Main m = Main.Instance;
-            if (m != null)
-                m.OnSpawnerTimeout();
+            if (m != null) m.OnSpawnerTimeout();
         };
         quickRow.AddChild(randItem);
         Button randActor = MakeButton("Random Actor");
+        randActor.CustomMinimumSize = new Vector2(0, 40);
+        randActor.SizeFlagsHorizontal = Control.SizeFlags.Expand;
         randActor.Pressed += () =>
         {
             Main m = Main.Instance;
-            if (m != null)
-                m.OnSpawnerActorTimeout();
+            if (m != null) m.OnSpawnerActorTimeout();
         };
         quickRow.AddChild(randActor);
         Button clearItems = MakeButton("Clear Items");
+        clearItems.CustomMinimumSize = new Vector2(0, 40);
+        clearItems.SizeFlagsHorizontal = Control.SizeFlags.Expand;
         clearItems.Pressed += () =>
         {
             Main m = Main.Instance;
             if (m != null)
             {
-                foreach (var it in m.spawnedItems)
+                var copy = new Godot.Collections.Array<ItemWindow>(m.spawnedItems);
+                foreach (var it in copy)
                 {
                     if (GodotObject.IsInstanceValid(it))
                         it.QueueFree();
@@ -251,17 +258,19 @@ public partial class MobileUI : CanvasLayer
         quickRow.AddChild(clearItems);
         vbox.AddChild(quickRow);
 
-        // Scroll container for item list
         ScrollContainer scroll = new ScrollContainer();
         scroll.SizeFlagsVertical = Control.SizeFlags.Expand;
         scroll.SizeFlagsHorizontal = Control.SizeFlags.Expand;
         scroll.HorizontalScrollMode = ScrollContainer.ScrollMode.Disabled;
+        scroll.MouseFilter = Control.MouseFilterEnum.Pass;
         vbox.AddChild(scroll);
 
         GridContainer grid = new GridContainer();
         grid.Columns = 2;
         grid.AddThemeConstantOverride("h_separation", 8);
         grid.AddThemeConstantOverride("v_separation", 6);
+        grid.MouseFilter = Control.MouseFilterEnum.Pass;
+        grid.SizeFlagsHorizontal = Control.SizeFlags.Expand;
         scroll.AddChild(grid);
 
         Main main = Main.Instance;
@@ -273,15 +282,14 @@ public partial class MobileUI : CanvasLayer
             return;
         }
 
-        // Ensure ResourceCache loaded
         if (!ResourceCache.resourcesLoaded.ContainsKey(ResourceCache.ResourceTyping.ITEM) || ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM].Count == 0)
         {
             Label lbl = new Label();
-            lbl.Text = "Items not loaded yet... retrying";
+            lbl.Text = "Items not loaded yet, retrying in 1s...";
             grid.AddChild(lbl);
             GetTree().CreateTimer(1.0).Timeout += () =>
             {
-                if (_spawnPanel != null)
+                if (_spawnPanel != null && GodotObject.IsInstanceValid(_spawnPanel))
                 {
                     _spawnPanel.QueueFree();
                     _spawnPanel = null;
@@ -297,10 +305,13 @@ public partial class MobileUI : CanvasLayer
             if (items[key] is ItemDataRes itemRes)
             {
                 Button ib = new Button();
-                ib.Text = itemRes.itemID.Length > 20 ? itemRes.itemID.Substring(0, 20) : itemRes.itemID;
+                string display = itemRes.itemID;
+                if (display.Length > 22) display = display.Substring(0, 22);
+                ib.Text = display;
                 ib.TooltipText = itemRes.itemID;
-                ib.CustomMinimumSize = new Vector2(0, 36);
-                ib.AddThemeFontSizeOverride("font_size", 12);
+                ib.CustomMinimumSize = new Vector2(0, 38);
+                ib.AddThemeFontSizeOverride("font_size", 11);
+                ib.MouseFilter = Control.MouseFilterEnum.Stop;
                 string captured = key;
                 ib.Pressed += () =>
                 {
@@ -316,12 +327,13 @@ public partial class MobileUI : CanvasLayer
             }
         }
 
-        // Separator label for actors
         Label actorLabel = new Label();
         actorLabel.Text = "--- Actors ---";
         actorLabel.AddThemeFontSizeOverride("font_size", 14);
+        actorLabel.MouseFilter = Control.MouseFilterEnum.Ignore;
         grid.AddChild(actorLabel);
         Label dummy = new Label();
+        dummy.MouseFilter = Control.MouseFilterEnum.Ignore;
         grid.AddChild(dummy);
 
         if (ResourceCache.resourcesLoaded.ContainsKey(ResourceCache.ResourceTyping.CHARACTER))
@@ -332,10 +344,13 @@ public partial class MobileUI : CanvasLayer
                 if (actors[key] is CharacterInfoDataRes charRes)
                 {
                     Button ab = new Button();
-                    ab.Text = charRes.Name.Length > 18 ? charRes.Name.Substring(0, 18) : charRes.Name;
+                    string display = charRes.Name;
+                    if (display.Length > 20) display = display.Substring(0, 20);
+                    ab.Text = display;
                     ab.TooltipText = charRes._itemID;
-                    ab.CustomMinimumSize = new Vector2(0, 36);
-                    ab.AddThemeFontSizeOverride("font_size", 12);
+                    ab.CustomMinimumSize = new Vector2(0, 38);
+                    ab.AddThemeFontSizeOverride("font_size", 11);
+                    ab.MouseFilter = Control.MouseFilterEnum.Stop;
                     string captured = key;
                     ab.Pressed += () =>
                     {
@@ -366,6 +381,7 @@ public partial class MobileUI : CanvasLayer
         sb.SetBorderWidthAll(1);
         sb.SetCornerRadiusAll(10);
         b.AddThemeStyleboxOverride("normal", sb);
+        b.MouseFilter = Control.MouseFilterEnum.Stop;
         return b;
     }
 }

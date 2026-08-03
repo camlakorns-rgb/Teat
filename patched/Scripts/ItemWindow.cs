@@ -40,6 +40,10 @@ public partial class ItemWindow : Window
 
 	public bool isThrown;
 
+	// Mobile renderer: render item as sprite at scene root to avoid Window flickering
+	private Node2D _mobileSpriteRoot;
+	private AnimatedSprite2D _mobileSprite;
+
 	private const float itemWindowGravity = 1400f;
 
 	private const float itemWindowDamping = 0.995f;
@@ -107,6 +111,8 @@ public partial class ItemWindow : Window
 					itemWindowVelocity = Vector2.Zero;
 				}
 				if (position != base.Position) base.Position = position;
+				if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+					_mobileSpriteRoot.Position = (Vector2)position;
 			}
 			else
 			{
@@ -142,6 +148,20 @@ public partial class ItemWindow : Window
 		base.Size = base.MinSize;
 		base.ProcessMode = ProcessModeEnum.Inherit;
 		isSetup = true;
+		
+		// Mobile renderer: create sprite at scene root to avoid Window flickering
+		if (Main._isMobile)
+		{
+			base.Visible = false;
+			_mobileSprite = new AnimatedSprite2D();
+			if (itemObject.spriteParentController != null && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+				_mobileSprite.SpriteFrames = srcSprite.SpriteFrames;
+			
+			_mobileSpriteRoot = new Node2D();
+			_mobileSpriteRoot.Position = base.Position;
+			_mobileSpriteRoot.AddChild(_mobileSprite);
+			GetTree().Root.AddChild(_mobileSpriteRoot);
+		}
 		if (!Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Contains(itemObject.itemInformation.itemID))
 		{
 			Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Add(itemObject.itemInformation.itemID);

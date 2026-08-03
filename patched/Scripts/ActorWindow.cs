@@ -31,6 +31,10 @@ public partial class ActorWindow : Window
 
 	public float walkX = -1f;
 
+	// Mobile renderer: render NPC as sprite in scene root viewport to avoid Window flickering
+	private Node2D _mobileSpriteRoot;
+	private AnimatedSprite2D _mobileSprite;
+
 	private double softWalkTimer;
 
 	public float randomDistance = -1f;
@@ -127,8 +131,27 @@ public partial class ActorWindow : Window
 			walkX = overridePos.X;
 		}
 		base.ProcessMode = ProcessModeEnum.Inherit;
-		base.Visible = true;
 		setAIType = characterActor.characterInformation.AITyping;
+		
+		// Mobile renderer: create sprite at scene root to avoid Window flickering
+		if (Main._isMobile)
+		{
+			base.Visible = false;
+			_mobileSprite = new AnimatedSprite2D();
+			_mobileSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
+			_mobileSprite.Scale = characterActor.MainBody.Scale;
+			
+			_mobileSpriteRoot = new Node2D();
+			_mobileSpriteRoot.Position = base.Position;
+			_mobileSpriteRoot.AddChild(_mobileSprite);
+			
+			// Add to scene tree root (NOT Main.Instance) so it doesn't move with Byte
+			GetTree().Root.AddChild(_mobileSpriteRoot);
+		}
+		else
+		{
+			base.Visible = true;
+		}
 		if (setAIType == CharacterInfoDataRes.AITypes.COMPANION)
 		{
 			randomAnimationTimer.Start();
@@ -346,6 +369,16 @@ public partial class ActorWindow : Window
 			}
 			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
 			if (newPos != base.Position) base.Position = newPos;
+			// Sync mobile sprite
+			if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+			{
+				_mobileSpriteRoot.Position = new Vector2(newPos.X, newPos.Y);
+				if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite))
+				{
+					_mobileSprite.Play(characterActor.MainBody.Animation);
+					_mobileSprite.FlipH = characterActor.MainBody.FlipH;
+				}
+			}
 			cachedThinBox = ComputeThinnerCollisionBox();
 		}
 		else
@@ -465,6 +498,8 @@ public partial class ActorWindow : Window
 			inUse = false;
 		}
 		if (base.Visible != shouldShow) base.Visible = shouldShow;
+		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+			_mobileSpriteRoot.Visible = shouldShow;
 		if (inAggro)
 		{
 			IEnumerable<AttachDataRes> enumerable = characterActor.characterInformation.overrideAnimation.Concat(possibleAggroOverrideAnimations);
@@ -533,6 +568,8 @@ public partial class ActorWindow : Window
 	private void HandleEnemyAI(double delta)
 	{
 		if (!base.Visible) base.Visible = true;
+		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+			_mobileSpriteRoot.Visible = true;
 		HandleEnemyMouseFlee(delta);
 		if (IsOverlappingTargetWindow())
 		{

@@ -297,7 +297,7 @@ public partial class ActorWindow : Window
 			}
 			return;
 		}
-		if (Mathf.Abs(walkX - targetX) >= stoppingDistance)
+		if (Mathf.Abs(walkX - targetX) > stoppingDistance * 0.9f)
 		{
 			if (softWalkTimer > 0.0)
 			{
@@ -344,7 +344,8 @@ public partial class ActorWindow : Window
 				cachedActorScreenIndex = currentScreen;
 				cachedActorScreenRect = DisplayServer.ScreenGetUsableRect(currentScreen);
 			}
-			base.Position = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
+			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
+			if (newPos != base.Position) base.Position = newPos;
 			cachedThinBox = ComputeThinnerCollisionBox();
 		}
 		else
@@ -377,7 +378,6 @@ public partial class ActorWindow : Window
 		if (randomDistance < 0f)
 		{
 			randomDistance = (float)GD.RandRange(distanceRanges.X, distanceRanges.Y);
-			_ = Main.Instance.mainWindow.Position;
 			int x = characterActor.trueSize.X;
 			for (int i = 0; i < 8; i++)
 			{
@@ -393,7 +393,7 @@ public partial class ActorWindow : Window
 			}
 		}
 		float num4 = (float)Main.Instance.mainCharacter.trueSize.X * randomDistance;
-		if (Mathf.Abs(walkX - (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X)) >= num4 && characterActor.MainBody.Animation != (StringName)"Walk")
+		if (Mathf.Abs(walkX - (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X)) > num4 * 0.9f && characterActor.MainBody.Animation != (StringName)"Walk")
 		{
 			return (float)Main.Instance.mainCharacter.trueSize.X * distanceRanges.Y;
 		}
@@ -420,7 +420,7 @@ public partial class ActorWindow : Window
 				float num5;
 				if (spawnedCompanion.randomDistance >= 0f)
 				{
-					float num3 = (float)Main.Instance.mainWindow.Position.X + (float)Main.Instance.mainCharacter.trueSize.X / 2f;
+					float num3 = (float)(Main._isMobile ? Main.Instance.Position.X : Main.Instance.mainWindow.Position.X) + (float)Main.Instance.mainCharacter.trueSize.X / 2f;
 					float companionEffectiveX = GetCompanionEffectiveX(spawnedCompanion);
 					float num4 = ((num3 > companionEffectiveX) ? (-1f) : 1f);
 					num5 = num3 + num4 * (float)Main.Instance.mainCharacter.trueSize.X * spawnedCompanion.randomDistance - (float)spawnedCompanion.characterActor.trueSize.X / 2f;
@@ -781,7 +781,7 @@ public partial class ActorWindow : Window
 				characterActor.mainBodyTimer.Stop();
 			}
 		}
-		else if (characterActor.mainBodyTimer.IsStopped())
+		else if (characterActor.mainBodyTimer.IsStopped() && characterActor.characterInformation.SpeicalAnimations != null)
 		{
 			string text = characterActor.characterInformation.SpeicalAnimations?.animationName ?? "";
 			if (!string.IsNullOrEmpty(text) && (characterActor.MainBody.Animation == (StringName)text || characterActor.MainBody.Animation == (StringName)(text + "_Transition")))

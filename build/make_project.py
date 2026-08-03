@@ -76,6 +76,8 @@ PATCHED_TARGETS = {
     'MobileUI.cs': '.',
     'ConfirmationMenu.cs': 'SubMenus/ConfirmationMenu',
     'ActorWindow.cs': 'CharacterScripts',
+    'ScreenDataHandler.cs': 'DataResources',
+    'TerminalAdventure.cs': 'SubMenus/TerminalMenu/TerminalAdventure',
 }
 
 def normalize(path):

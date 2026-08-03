@@ -136,13 +136,25 @@ public partial class ActorWindow : Window
 		// Mobile renderer: create sprite at scene root to avoid Window flickering
 		if (Main._isMobile)
 		{
-			base.Visible = false;
+			base.Visible = true;
+			if (characterActor != null && characterActor.MainBody != null)
+			{
+				characterActor.MainBody.Visible = false;
+			}
 			_mobileSprite = new AnimatedSprite2D();
-			_mobileSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
-			_mobileSprite.Scale = characterActor.MainBody.Scale;
+			if (characterActor != null && characterActor.MainBody != null)
+			{
+				_mobileSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
+				_mobileSprite.Scale = characterActor.MainBody.Scale;
+				_mobileSprite.Position = characterActor.MainBody.Position;
+				_mobileSprite.Play(characterActor.MainBody.Animation);
+				_mobileSprite.Frame = characterActor.MainBody.Frame;
+				_mobileSprite.FlipH = characterActor.MainBody.FlipH;
+				_mobileSprite.FlipV = characterActor.MainBody.FlipV;
+			}
 			
 			_mobileSpriteRoot = new Node2D();
-			_mobileSpriteRoot.Position = base.Position;
+			_mobileSpriteRoot.Position = (Vector2)base.Position;
 			_mobileSpriteRoot.AddChild(_mobileSprite);
 			
 			// Add to scene tree root (NOT Main.Instance) so it doesn't move with Byte
@@ -292,6 +304,22 @@ public partial class ActorWindow : Window
 		case CharacterInfoDataRes.AITypes.COMPANION:
 			HandleCompanionAI(delta);
 			break;
+		}
+		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+		{
+			_mobileSpriteRoot.Position = (Vector2)base.Position;
+			_mobileSpriteRoot.Visible = base.Visible && characterActor != null && characterActor.Visible;
+			if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite) && characterActor != null && characterActor.MainBody != null)
+			{
+				if (_mobileSprite.SpriteFrames != characterActor.MainBody.SpriteFrames)
+					_mobileSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
+				_mobileSprite.Animation = characterActor.MainBody.Animation;
+				_mobileSprite.Frame = characterActor.MainBody.Frame;
+				_mobileSprite.Scale = characterActor.MainBody.Scale;
+				_mobileSprite.Position = characterActor.MainBody.Position;
+				_mobileSprite.FlipH = characterActor.MainBody.FlipH;
+				_mobileSprite.FlipV = characterActor.MainBody.FlipV;
+			}
 		}
 	}
 
@@ -829,6 +857,17 @@ public partial class ActorWindow : Window
 			}
 			characterActor.mainBodyTimer.Start();
 		}
+	}
+
+
+	public override void _ExitTree()
+	{
+		if (_mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+		{
+			_mobileSpriteRoot.QueueFree();
+			_mobileSpriteRoot = null;
+		}
+		base._ExitTree();
 	}
 
 }

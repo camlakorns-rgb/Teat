@@ -130,10 +130,26 @@ public partial class ItemWindow : Window
 		}
 		MoveItem();
 		PopItem();
-		if (!base.Visible)
+		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 		{
-			base.Visible = true;
+			_mobileSpriteRoot.Position = (Vector2)base.Position;
+			_mobileSpriteRoot.Visible = base.Visible && !CurrentlyPickedUp;
+			if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite))
+			{
+				if (itemObject != null && itemObject.spriteParentController != null && itemObject.spriteParentController.GetChildCount() > 0 && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+				{
+					if (_mobileSprite.SpriteFrames != srcSprite.SpriteFrames)
+						_mobileSprite.SpriteFrames = srcSprite.SpriteFrames;
+					_mobileSprite.Animation = srcSprite.Animation;
+					_mobileSprite.Frame = srcSprite.Frame;
+					_mobileSprite.Scale = itemObject.spriteParentController.Scale;
+					_mobileSprite.Position = itemObject.spriteParentController.Position;
+					_mobileSprite.FlipH = srcSprite.FlipH;
+					_mobileSprite.FlipV = srcSprite.FlipV;
+				}
+			}
 		}
+
 	}
 
 	public void SetupItemWindow(ItemDataRes itemData = null)
@@ -152,13 +168,25 @@ public partial class ItemWindow : Window
 		// Mobile renderer: create sprite at scene root to avoid Window flickering
 		if (Main._isMobile)
 		{
-			base.Visible = false;
+			base.Visible = true;
+			if (itemObject != null && itemObject.spriteParentController != null)
+			{
+				itemObject.spriteParentController.Visible = false;
+			}
 			_mobileSprite = new AnimatedSprite2D();
-			if (itemObject.spriteParentController != null && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+			if (itemObject != null && itemObject.spriteParentController != null && itemObject.spriteParentController.GetChildCount() > 0 && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+			{
 				_mobileSprite.SpriteFrames = srcSprite.SpriteFrames;
+				_mobileSprite.Scale = itemObject.spriteParentController.Scale;
+				_mobileSprite.Position = itemObject.spriteParentController.Position;
+				_mobileSprite.Play(srcSprite.Animation);
+				_mobileSprite.Frame = srcSprite.Frame;
+				_mobileSprite.FlipH = srcSprite.FlipH;
+				_mobileSprite.FlipV = srcSprite.FlipV;
+			}
 			
 			_mobileSpriteRoot = new Node2D();
-			_mobileSpriteRoot.Position = base.Position;
+			_mobileSpriteRoot.Position = (Vector2)base.Position;
 			_mobileSpriteRoot.AddChild(_mobileSprite);
 			GetTree().Root.AddChild(_mobileSpriteRoot);
 		}
@@ -912,6 +940,17 @@ public partial class ItemWindow : Window
 		{
 			base.Visible = false;
 		}
+	}
+
+
+	public override void _ExitTree()
+	{
+		if (_mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+		{
+			_mobileSpriteRoot.QueueFree();
+			_mobileSpriteRoot = null;
+		}
+		base._ExitTree();
 	}
 
 }

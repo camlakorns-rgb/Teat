@@ -15,6 +15,7 @@ public partial class Main : Node2D
     private static bool _isMobileChecked = false;
     public static Vector2I _lastTouchPos = new Vector2I(0,0);
     public static readonly string V13_BUILD = "V13_ITEMDRAG_AWAYFIX_BUBBLEFIX";
+    public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
     public Vector2I _mobileTouchStart;
@@ -47,7 +48,7 @@ public partial class Main : Node2D
         for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
             ItemWindow w = spawnedItems[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(p))
+            if (GodotObject.IsInstanceValid(w) && w.Visible && !w.CurrentlyPickedUp && new Rect2I(w.Position, w.Size).HasPoint(p))
                 return true;
         }
         return false;
@@ -279,7 +280,7 @@ public partial class Main : Node2D
         for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
             ItemWindow w = spawnedItems[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible)
+            if (GodotObject.IsInstanceValid(w) && w.Visible && !w.CurrentlyPickedUp)
             {
                 Rect2I itemRect = new Rect2I(w.Position, w.Size);
                 if (itemRect.HasPoint(pos))

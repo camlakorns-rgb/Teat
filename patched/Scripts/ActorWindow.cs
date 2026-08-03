@@ -129,7 +129,7 @@ public partial class ActorWindow : Window
             GD.Print($"[BitDebug] Actor spawned ID={id} Name={name} Size={characterActor.trueSize}");
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
             {
-                float visualBoost = 2.6f; // V44 huge -> match anim size
+                                float visualBoost = 0.9f; // V45: shorter than Byte (90%), fix blurry from upscaling
                 if (characterActor.spriteParentController != null)
                     characterActor.spriteParentController.Scale = new Vector2(visualBoost, visualBoost);
                 if (characterActor.MainBody != null)
@@ -144,7 +144,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f);
+				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.30f);
 			}
 			else
 			{
@@ -438,7 +438,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f); // V44 huge -> revert to 22% push down to match anim grounding
+				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.30f); // V45 floating a bit -> 30% down // V44 huge -> revert to 22% push down to match anim grounding
 			}
 			else
 			{

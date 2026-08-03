@@ -17,6 +17,7 @@ public partial class Main : Node2D
     public static readonly string V13_BUILD = "V13_ITEMDRAG_AWAYFIX_BUBBLEFIX";
     public static readonly string V30_BUILD = "V30_BLACKSCREEN_ITEMSPAWN_FIX";
     public static readonly string V30_BUILD2 = "V30_MOBILE_RENDERER_VISIBLE_FALSE";
+    public static readonly string V31_BUILD = "V31_ITEM_VISIBLE_FIX";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
@@ -1224,8 +1225,8 @@ public partial class Main : Node2D
     public void CallItemSpawn(ItemDataRes spawningItem, Vector2I spawningPosition)
     {
         ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
-        itemWindow.SetupItemWindow(spawningItem);
         AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
+        itemWindow.SetupItemWindow(spawningItem);
         GD.Print("Item Spawn Position [" + spawningPosition.ToString() + "] - Current Byte Position [" + mainWindow.Position.ToString() + "]");
         itemWindow.Position = spawningPosition;
         spawnedItems.Add(itemWindow);
@@ -1334,8 +1335,8 @@ public partial class Main : Node2D
             {
                 string item = weightGroup.GetItem(GD.RandRange(0, 10000));
                 ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
-                itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
                 AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
+                itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
                 if (x == -1 && y == -1)
                 {
                     int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);

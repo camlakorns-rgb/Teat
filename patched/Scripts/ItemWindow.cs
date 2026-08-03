@@ -159,6 +159,35 @@ public partial class ItemWindow : Window
 
 	}
 
+	public void CreateMobileRenderer()
+	{
+		if (_mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
+			return;
+		if (itemObject == null || itemObject.spriteParentController == null)
+			return;
+		if (GetTree() == null || GetTree().Root == null)
+		{
+			CallDeferred(MethodName.CreateMobileRenderer);
+			return;
+		}
+		_mobileSprite = new AnimatedSprite2D();
+		if (itemObject.spriteParentController.GetChildCount() > 0 && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+		{
+			_mobileSprite.SpriteFrames = srcSprite.SpriteFrames;
+			_mobileSprite.Scale = itemObject.spriteParentController.Scale;
+			_mobileSprite.Position = itemObject.spriteParentController.Position;
+			try { _mobileSprite.Play(srcSprite.Animation); } catch {}
+			_mobileSprite.Frame = srcSprite.Frame;
+			_mobileSprite.FlipH = srcSprite.FlipH;
+			_mobileSprite.FlipV = srcSprite.FlipV;
+		}
+		_mobileSpriteRoot = new Node2D();
+		_mobileSpriteRoot.Position = (Vector2)base.Position;
+		_mobileSpriteRoot.Visible = true;
+		_mobileSpriteRoot.AddChild(_mobileSprite);
+		try { GetTree().Root.AddChild(_mobileSpriteRoot); } catch { CallDeferred(MethodName.CreateMobileRenderer); }
+	}
+
 	public void SetupItemWindow(ItemDataRes itemData = null)
 	{
 		if (itemData != null)
@@ -172,7 +201,7 @@ public partial class ItemWindow : Window
 		base.ProcessMode = ProcessModeEnum.Inherit;
 		isSetup = true;
 		
-		// Mobile renderer: create sprite at scene root to avoid Window flickering (V30 fix: Visible=false to prevent black screen overlay)
+		// Mobile renderer: V30 Visible=false, V31 deferred creation
 		if (Main._isMobile)
 		{
 			base.Transparent = true;
@@ -182,23 +211,7 @@ public partial class ItemWindow : Window
 			{
 				itemObject.spriteParentController.Visible = false;
 			}
-			_mobileSprite = new AnimatedSprite2D();
-			if (itemObject != null && itemObject.spriteParentController != null && itemObject.spriteParentController.GetChildCount() > 0 && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
-			{
-				_mobileSprite.SpriteFrames = srcSprite.SpriteFrames;
-				_mobileSprite.Scale = itemObject.spriteParentController.Scale;
-				_mobileSprite.Position = itemObject.spriteParentController.Position;
-				_mobileSprite.Play(srcSprite.Animation);
-				_mobileSprite.Frame = srcSprite.Frame;
-				_mobileSprite.FlipH = srcSprite.FlipH;
-				_mobileSprite.FlipV = srcSprite.FlipV;
-			}
-			
-			_mobileSpriteRoot = new Node2D();
-			_mobileSpriteRoot.Position = (Vector2)base.Position;
-			_mobileSpriteRoot.Visible = true;
-			_mobileSpriteRoot.AddChild(_mobileSprite);
-			try { GetTree().Root.AddChild(_mobileSpriteRoot); } catch { }
+			CreateMobileRenderer();
 		}
 		if (!Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Contains(itemObject.itemInformation.itemID))
 		{

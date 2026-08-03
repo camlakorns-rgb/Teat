@@ -131,8 +131,26 @@ public partial class ActorWindow : Window
 			walkX = overridePos.X;
 		}
 		base.ProcessMode = ProcessModeEnum.Inherit;
-		base.Visible = true;
 		setAIType = characterActor.characterInformation.AITyping;
+		
+		// Mobile rendering: create sprite in main viewport instead of Window surface
+		if (Main._isMobile)
+		{
+			base.Visible = false;
+			_mobileAnimSprite = new AnimatedSprite2D();
+			_mobileAnimSprite.SpriteFrames = characterActor.MainBody.SpriteFrames;
+			_mobileAnimSprite.Position = new Vector2(characterActor.trueSize.X / 2f, characterActor.trueSize.Y / 2f);
+			_mobileAnimSprite.Scale = characterActor.MainBody.Scale;
+			
+			_mobileContainer = new Node2D();
+			_mobileContainer.Position = base.Position;
+			_mobileContainer.AddChild(_mobileAnimSprite);
+			Main.Instance.AddChild(_mobileContainer);
+		}
+		else
+		{
+			base.Visible = true;
+		}
 		if (setAIType == CharacterInfoDataRes.AITypes.COMPANION)
 		{
 			randomAnimationTimer.Start();

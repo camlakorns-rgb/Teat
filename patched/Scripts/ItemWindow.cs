@@ -133,10 +133,19 @@ public partial class ItemWindow : Window
                 {
                     base.Position = new Vector2I(base.Position.X, num3);
                 }
+                // Sync mobile renderer
+                if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+                    _mobileContainer.Position = (Vector2)base.Position;
             }
         }
         MoveItem();
         PopItem();
+        // Always sync mobile renderer position at end of _Process
+        if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+        {
+            _mobileContainer.Position = (Vector2)base.Position;
+            _mobileContainer.Visible = true;
+        }
         if (!base.Visible && !Main._isMobile)
         {
             base.Visible = true;
@@ -179,6 +188,7 @@ public partial class ItemWindow : Window
             _mobileItemSprite.Position = new Vector2(itemObject.trueSize.X / 2f, itemObject.trueSize.Y / 2f);
             
             _mobileContainer = new Node2D();
+            _mobileContainer.Position = base.Position;  // Initialize at spawn position
             _mobileContainer.AddChild(_mobileItemSprite);
             Main.Instance.AddChild(_mobileContainer);
         }

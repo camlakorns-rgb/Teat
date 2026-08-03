@@ -127,7 +127,7 @@ public partial class ActorWindow : Window
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan") || id.Contains("1_bit"))
             {
-                float visualBoost = 2.2f;
+                float visualBoost = 3.2f; // V40 still small -> 3.2x
                 if (characterActor.MainBody != null)
                 {
                     characterActor.MainBody.Scale *= visualBoost;
@@ -144,7 +144,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				y = screenSize.Y - characterActor.trueSize.Y;
+				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f);
 			}
 			else
 			{
@@ -438,7 +438,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				groundY = screenSize.Y - characterActor.trueSize.Y;
+				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f);
 			}
 			else
 			{

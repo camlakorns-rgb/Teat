@@ -26,6 +26,7 @@ public partial class Main : Node2D
     public static readonly string V37_BUILD = "V37_BIT_HIGHER_SMALLER";
     public static readonly string V38_BUILD = "V38_FLICKER_TELEPORT_FIX";
     public static readonly string V39_BUILD = "V39_DEEP_DIVE_BIT_TOP_SMALL";
+    public static readonly string V40_BUILD = "V40_BIT_SMALL_ONE_BLOCK_HIGH";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;

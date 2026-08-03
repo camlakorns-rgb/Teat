@@ -66,16 +66,21 @@ public partial class Main : Node2D
 
     // Find a RANDOM_CLICKED_WINDOW popup attachment at the given point.
     // These are the "popup ads" that bounce around the screen.
+    // IMPORTANT: They are spawned with unclearableAttachment=true, so they
+    // are NOT in spawnedAttachments. We must search all scene children.
     private AttachObjWindow FindPopupAttachmentAtPoint(Vector2I p)
     {
-        for (int i = spawnedAttachments.Count - 1; i >= 0; i--)
+        foreach (Node child in GetChildren())
         {
-            AttachObjWindow w = spawnedAttachments[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible
+            if (child is AttachObjWindow w && GodotObject.IsInstanceValid(w) && w.Visible
                 && w.attachObject != null
-                && w.attachObject.attachedItemInformation.attachmentTyping == AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW
-                && new Rect2I(w.Position, w.Size).HasPoint(p))
-                return w;
+                && w.attachObject.attachedItemInformation != null
+                && w.attachObject.attachedItemInformation.attachmentTyping == AttachDataRes.AttachmentType.RANDOM_CLICKED_WINDOW)
+            {
+                Rect2I rect = new Rect2I(w.Position, w.Size);
+                if (rect.HasPoint(p))
+                    return w;
+            }
         }
         return null;
     }

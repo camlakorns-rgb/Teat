@@ -127,7 +127,7 @@ public partial class ActorWindow : Window
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan") || id.Contains("1_bit"))
             {
-                float visualBoost = 3.2f; // V40 still small -> 3.2x
+                float visualBoost = 4.2f; // V41 still small + one block high -> 4.2x + 35% ground
                 if (characterActor.MainBody != null)
                 {
                     characterActor.MainBody.Scale *= visualBoost;
@@ -144,7 +144,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f);
+				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.35f);
 			}
 			else
 			{
@@ -347,7 +347,7 @@ public partial class ActorWindow : Window
 		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 		{
 			_mobileSpriteRoot.Position = (Vector2)base.Position;
-			_mobileSpriteRoot.Visible = IsActiveForMobile && characterActor != null && characterActor.Visible;
+			_mobileSpriteRoot.Visible = IsActiveForMobile && characterActor != null && characterActor.Visible && !inUse && !inUseByAttachment;
 			if (_mobileSprite != null && GodotObject.IsInstanceValid(_mobileSprite) && characterActor != null && characterActor.MainBody != null)
 			{
 				if (_mobileSprite.SpriteFrames != characterActor.MainBody.SpriteFrames)
@@ -438,7 +438,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.22f);
+				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.35f); // V41 one block high -> push down more
 			}
 			else
 			{

@@ -117,7 +117,21 @@ public partial class ActorWindow : Window
 		{
 			characterActor.characterInformation = characterData;
 		}
-		characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
+		        characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
+        // V34: Bit and Trojan were tiny and floating - boost their size on mobile
+        if (Main._isMobile && characterActor.characterInformation != null)
+        {
+            string id = characterActor.characterInformation._itemID?.ToLower() ?? "";
+            string name = characterActor.characterInformation.Name?.ToLower() ?? "";
+            if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
+            {
+                // Boost Bit/Trojan size 1.8x on mobile
+                characterActor.trueSize = (Vector2I)((Vector2)characterActor.trueSize * 1.8f);
+                // Also increase characterScale for sprite rendering
+                if (characterActor.MainBody != null)
+                    characterActor.MainBody.Scale *= 1.5f;
+            }
+        }
 		characterActor.SetupActor();
 		base.MinSize = characterActor.trueSize;
 		base.Size = base.MinSize;

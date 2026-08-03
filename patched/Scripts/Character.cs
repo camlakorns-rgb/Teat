@@ -128,11 +128,6 @@ public partial class Character : Node2D
 		petMainBodyState = MainBodyStates.Idle;
 		mainBodyTimer.Start();
 		spriteParentController.setupCharacterSprites(this);
-		// V32: reset offset on mobile to avoid floating
-		if (Main._isMobile)
-		{
-			spriteParentController.Position = Vector2.Zero;
-		}
 		spriteParentOriginalPos = spriteParentController.Position;
 		MainBody.AnimationLooped += Blink;
 		StartBlinkTimer();

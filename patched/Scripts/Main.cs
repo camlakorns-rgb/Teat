@@ -246,11 +246,16 @@ public partial class Main : Node2D
 
     private ItemWindow FindItemAtPoint(Vector2I pos)
     {
+        // Iterate backwards to find topmost item (last in list = drawn on top)
         for (int i = spawnedItems.Count - 1; i >= 0; i--)
         {
             ItemWindow w = spawnedItems[i];
-            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(pos))
-                return w;
+            if (GodotObject.IsInstanceValid(w) && w.Visible)
+            {
+                Rect2I itemRect = new Rect2I(w.Position, w.Size);
+                if (itemRect.HasPoint(pos))
+                    return w;
+            }
         }
         return null;
     }

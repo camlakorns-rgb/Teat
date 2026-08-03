@@ -74,6 +74,7 @@ PATCHED_TARGETS = {
     'CatchHerGameLogic.cs': 'Minigames/CatchHer',
     'TerminalHandler.cs': 'SubMenus/TerminalMenu',
     'MobileUI.cs': '.',
+    'ConfirmationMenu.cs': 'SubMenus/ConfirmationMenu',
 }
 
 def normalize(path):

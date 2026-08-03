@@ -21,6 +21,7 @@ public partial class Main : Node2D
     public static readonly string V32_BUILD = "V32_SCALE_FLOAT_FIX";
     public static readonly string V33_BUILD = "V33_REVERT_SCALE_FIX_BIT";
     public static readonly string V34_BUILD = "V34_FIX_FLOAT_TINY_BIT";
+    public static readonly string V35_BUILD = "V35_FLOAT_SMALL_FIX";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
@@ -840,7 +841,7 @@ public partial class Main : Node2D
         else if (_isMobile)
         {
             Vector2I screenSize = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
-            int groundY = screenSize.Y - mainCharacter.trueSize.Y;
+            int groundY = screenSize.Y - mainCharacter.trueSize.Y + Mathf.RoundToInt(mainCharacter.trueSize.Y * 0.08f);
             if (Position.Y < (float)groundY)
             {
                 Position += new Vector2(0f, 980f * (float)delta);

@@ -129,7 +129,7 @@ public partial class ActorWindow : Window
             GD.Print($"[BitDebug] Actor spawned ID={id} Name={name} Size={characterActor.trueSize}");
             if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
             {
-                                float visualBoost = 1.4f; // V46: still tiny and floating again - 0.9x too small, need 1.4x shorter than Byte 1.6x
+                                float visualBoost = 1.5f; // V47: still small and floating - deep search: Qubit 128x128 same as Byte, but appears tiny due to scale reset, boost to 1.5 slightly shorter than Byte 1.6
                 if (characterActor.spriteParentController != null)
                     characterActor.spriteParentController.Scale = new Vector2(visualBoost, visualBoost);
                 if (characterActor.MainBody != null)
@@ -144,7 +144,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.30f);
+				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.40f);
 			}
 			else
 			{
@@ -438,7 +438,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.30f); // V45 floating a bit -> 30% down // V44 huge -> revert to 22% push down to match anim grounding
+				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.40f); // V47 still small+float - 40% down
 			}
 			else
 			{

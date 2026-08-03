@@ -33,6 +33,7 @@ public partial class Main : Node2D
     public static readonly string V44_BUILD = "V44_HUGE_MATCH_ANIM";
     public static readonly string V45_BUILD = "V45_BIT_SHORTER_GROUNDED_SPAWN_MENU";
     public static readonly string V46_BUILD = "V46_BIT_TINY_FLOATING_SPAWN_MENU_FIX";
+    public static readonly string V47_BUILD = "V47_DEEP_DIVE_TINY_FLOAT";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;

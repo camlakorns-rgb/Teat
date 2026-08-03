@@ -14,7 +14,7 @@ public partial class Main : Node2D
     public static bool _isMobile = false;
     private static bool _isMobileChecked = false;
     public static Vector2I _lastTouchPos = new Vector2I(0,0);
-    public static readonly string V10_BUILD = "V10_MOBILEUI_BUILD";
+    public static readonly string V12_BUILD = "V12_HANDOFF7FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
     public Vector2I _mobileTouchStart;

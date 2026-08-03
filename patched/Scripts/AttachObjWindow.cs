@@ -125,6 +125,28 @@ public partial class AttachObjWindow : Window
         }
     }
 
+    // Public method to force-dismiss this popup (for mobile tap-to-close)
+    // Bypasses the desktop-only mouse position check in RandomObjectClicked
+    public void ForceDismiss()
+    {
+        if (FadeKill != null && !FadeKill.IsPlaying())
+        {
+            FadeKill.Play("FadeOutKill");
+            // The animation's method track should call QueueFree at the end,
+            // but schedule it as safety net in case it doesn't
+            GetTree().CreateTimer(FadeKill.GetAnimation("FadeOutKill").Length).Timeout += () =>
+            {
+                if (GodotObject.IsInstanceValid(this))
+                    QueueFree();
+            };
+        }
+        else
+        {
+            // No animation player or it's already playing — just kill it
+            QueueFree();
+        }
+    }
+
     public void SetupAttachmentWindow(DialogueDataRes passedText = null)
     {
         if (attachObject.attachedItemInformation == null)

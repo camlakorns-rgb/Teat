@@ -154,8 +154,7 @@ public partial class Main : Node2D
                     if (popupAtPoint != null)
                     {
                         _mobileTouchTarget = MobileTouchTargetKind.None;
-                        Input.ActionPress("Pet");
-                        Callable.From(() => Input.ActionRelease("Pet")).CallDeferred();
+                        popupAtPoint.ForceDismiss();
                         return;
                     }
                     _mobileTouchIndex = touch.Index;

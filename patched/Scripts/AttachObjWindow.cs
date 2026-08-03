@@ -393,8 +393,11 @@ public partial class AttachObjWindow : Window
         // On mobile, use Byte's actual size instead of fullscreen window size
         Vector2I size = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? Main.Instance.mainCharacter.trueSize : parentWindow.Size;
         Vector2I trueSize = attachObject.trueSize;
-        int num = position.X + size.X / 2 - trueSize.X / 2 + (int)attachmentMargin.X;
-        int num2 = position.Y + size.Y / 2 - trueSize.Y / 2 + (int)attachmentMargin.Y;
+        // V38: on mobile for OVERRIDE (sex scenes) ignore margin to avoid teleport to right
+        int marginX = Main._isMobile ? 0 : (int)attachmentMargin.X;
+        int marginY = Main._isMobile ? 0 : (int)attachmentMargin.Y;
+        int num = position.X + size.X / 2 - trueSize.X / 2 + marginX;
+        int num2 = position.Y + size.Y / 2 - trueSize.Y / 2 + marginY;
         Rect2I rect2I = DisplayServer.ScreenGetUsableRect(parentWindow.CurrentScreen);
         int max = rect2I.End.Y - trueSize.Y;
         int x = Mathf.Clamp(num, rect2I.Position.X, rect2I.End.X - trueSize.X);
@@ -475,10 +478,11 @@ public partial class AttachObjWindow : Window
                     attachObject.FlipHorizontal(_forcedMoveDirection < 0f);
                     _forcedMovementX = num2;
                 }
-                // On mobile, update Main.Instance.Position instead of parentWindow.Position
+                // V38: on mobile don't move Byte during sex scene (was causing teleport right)
                 if (Main._isMobile && parentWindow == Main.Instance.mainWindow)
                 {
-                    Main.Instance.Position = new Vector2(num2, Main.Instance.Position.Y);
+                    // Keep Byte stationary on mobile during OVERRIDE scenes
+                    // Main.Instance.Position stays at _savedBytePosX
                 }
                 else
                 {

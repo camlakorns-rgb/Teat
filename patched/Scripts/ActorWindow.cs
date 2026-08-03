@@ -564,7 +564,7 @@ public partial class ActorWindow : Window
 		{
 			inUse = false;
 		}
-		if (base.Visible != shouldShow) base.Visible = shouldShow;
+		if (base.Visible != shouldShow && !Main._isMobile) base.Visible = shouldShow;
 		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 			_mobileSpriteRoot.Visible = shouldShow;
 		if (inAggro)
@@ -634,7 +634,7 @@ public partial class ActorWindow : Window
 
 	private void HandleEnemyAI(double delta)
 	{
-		if (!base.Visible) base.Visible = true;
+		if (!base.Visible && !Main._isMobile) base.Visible = true;
 		if (Main._isMobile && _mobileSpriteRoot != null && GodotObject.IsInstanceValid(_mobileSpriteRoot))
 			_mobileSpriteRoot.Visible = true;
 		HandleEnemyMouseFlee(delta);

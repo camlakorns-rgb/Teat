@@ -49,6 +49,10 @@ public partial class ActorWindow : Window
 
 	private Rect2I cachedThinBox;
 
+	// Mobile rendering: render NPC as Sprite2D in main viewport instead of Window
+	private Node2D _mobileContainer;
+	private AnimatedSprite2D _mobileAnimSprite;
+
 	private double spawnTime;
 
 	public bool inUse;
@@ -234,6 +238,8 @@ public partial class ActorWindow : Window
 		if (popShader != null)
 		{
 			characterActor.MainBody.Play("Idle");
+			if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
+				_mobileAnimSprite.Play("Idle");
 			if (!(popProgress >= 0f))
 			{
 				return;
@@ -294,6 +300,8 @@ public partial class ActorWindow : Window
 			if (characterActor.MainBody.Animation == (StringName)"Walk")
 			{
 				characterActor.MainBody.Play("Idle");
+				if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
+					_mobileAnimSprite.Play("Idle");
 			}
 			return;
 		}
@@ -338,6 +346,8 @@ public partial class ActorWindow : Window
 			bool flipH = (characterActor.characterInformation.flipSpriteH ? (num2 == 1) : (num2 == -1));
 			characterActor.FlipHSpriteTo(flipH);
 			characterActor.MainBody.Play("Walk");
+			if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
+				_mobileAnimSprite.Play("Walk");
 			int currentScreen = base.CurrentScreen;
 			if (currentScreen != cachedActorScreenIndex)
 			{
@@ -345,7 +355,21 @@ public partial class ActorWindow : Window
 				cachedActorScreenRect = DisplayServer.ScreenGetUsableRect(currentScreen);
 			}
 			Vector2I newPos = new Vector2I(Main.Instance.screenDataHandler.ClampAcrossAllScreensX(Mathf.RoundToInt(walkX), characterActor.trueSize.X), cachedActorScreenRect.End.Y - characterActor.trueSize.Y);
-			if (newPos != base.Position) base.Position = newPos;
+			if (Main._isMobile)
+			{
+				// Update mobile sprite container instead of Window position
+				if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+					_mobileContainer.Position = new Vector2(newPos.X, newPos.Y);
+				if (_mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
+				{
+					_mobileAnimSprite.Play(characterActor.MainBody.Animation);
+					_mobileAnimSprite.FlipH = characterActor.MainBody.FlipH;
+				}
+			}
+			else
+			{
+				if (newPos != base.Position) base.Position = newPos;
+			}
 			cachedThinBox = ComputeThinnerCollisionBox();
 		}
 		else
@@ -355,6 +379,8 @@ public partial class ActorWindow : Window
 			if (characterActor.MainBody.Animation == (StringName)"Walk")
 			{
 				characterActor.MainBody.Play("Idle");
+				if (Main._isMobile && _mobileAnimSprite != null && GodotObject.IsInstanceValid(_mobileAnimSprite))
+					_mobileAnimSprite.Play("Idle");
 			}
 		}
 	}
@@ -450,18 +476,31 @@ public partial class ActorWindow : Window
 
 	private void HandleCompanionAI(double delta)
 	{
-		if (!Main.Instance.mainCharacter.Visible && inUse)
+		if (Main._isMobile)
 		{
-			base.Visible = false;
-		}
-		else if (inUseByAttachment)
-		{
-			base.Visible = false;
+			// On mobile, control visibility via mobile sprite, not Window
+			if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+			{
+				bool shouldShow = (Main.Instance.mainCharacter.Visible || !inUse) && !inUseByAttachment;
+				_mobileContainer.Visible = shouldShow;
+			}
+			if (!inUseByAttachment) inUse = false;
 		}
 		else
 		{
-			base.Visible = true;
-			inUse = false;
+			if (!Main.Instance.mainCharacter.Visible && inUse)
+			{
+				base.Visible = false;
+			}
+			else if (inUseByAttachment)
+			{
+				base.Visible = false;
+			}
+			else
+			{
+				base.Visible = true;
+				inUse = false;
+			}
 		}
 		if (inAggro)
 		{
@@ -530,7 +569,15 @@ public partial class ActorWindow : Window
 
 	private void HandleEnemyAI(double delta)
 	{
-		base.Visible = true;
+		if (Main._isMobile)
+		{
+			if (_mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+				_mobileContainer.Visible = true;
+		}
+		else
+		{
+			base.Visible = true;
+		}
 		HandleEnemyMouseFlee(delta);
 		if (IsOverlappingTargetWindow())
 		{

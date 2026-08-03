@@ -82,6 +82,8 @@ public partial class ItemWindow : Window
         {
             base.Visible = false;
             base.MousePassthrough = true;
+            if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+                _mobileContainer.Visible = false;
             return;
         }
         base.MousePassthrough = true; // Always pass-through on mobile; Main._Input handles item touch
@@ -117,6 +119,8 @@ public partial class ItemWindow : Window
                     itemWindowVelocity = Vector2.Zero;
                 }
                 base.Position = position;
+            if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+                _mobileContainer.Position = (Vector2)position;
             }
             else
             {
@@ -133,9 +137,19 @@ public partial class ItemWindow : Window
         }
         MoveItem();
         PopItem();
-        if (!base.Visible)
+        if (!base.Visible && !Main._isMobile)
         {
             base.Visible = true;
+        }
+        if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+        {
+            _mobileContainer.Visible = true;
+            // Sync animation from source sprite
+            if (itemObject.spriteParentController != null && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+            {
+                _mobileItemSprite.Play(srcSprite.Animation);
+                _mobileItemSprite.FlipH = srcSprite.FlipH;
+            }
         }
     }
 
@@ -151,6 +165,24 @@ public partial class ItemWindow : Window
         base.Size = base.MinSize;
         base.ProcessMode = ProcessModeEnum.Inherit;
         isSetup = true;
+
+        // Mobile fix: create sprite renderer in main viewport to avoid Window surface flickering
+        if (Main._isMobile)
+        {
+            base.Visible = false;  // Hide the Window surface
+            _mobileItemSprite = new AnimatedSprite2D();
+            // Get SpriteFrames from the item's sprite controller
+            if (itemObject.spriteParentController != null && itemObject.spriteParentController.GetChild(0) is AnimatedSprite2D srcSprite)
+            {
+                _mobileItemSprite.SpriteFrames = srcSprite.SpriteFrames;
+            }
+            _mobileItemSprite.Position = new Vector2(itemObject.trueSize.X / 2f, itemObject.trueSize.Y / 2f);
+            
+            _mobileContainer = new Node2D();
+            _mobileContainer.AddChild(_mobileItemSprite);
+            Main.Instance.AddChild(_mobileContainer);
+        }
+
         if (!Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Contains(itemObject.itemInformation.itemID))
         {
             Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Add(itemObject.itemInformation.itemID);
@@ -158,6 +190,9 @@ public partial class ItemWindow : Window
         }
     }
 
+    // Mobile rendering: render item as Sprite2D in main viewport instead of Window
+    private Node2D _mobileContainer;
+    private AnimatedSprite2D _mobileItemSprite;
     private bool _mobileHeld;
     private Vector2I _mobileGrabLocal;
     private Vector2I _mobileGrabWindowPos;
@@ -187,6 +222,8 @@ public partial class ItemWindow : Window
     private void ApplyMobilePosition()
     {
         base.Position = ClampMobilePos(_mobileGrabWindowPos + (_mobileLastLocal - _mobileGrabLocal));
+        if (Main._isMobile && _mobileContainer != null && GodotObject.IsInstanceValid(_mobileContainer))
+            _mobileContainer.Position = (Vector2)base.Position;
     }
 
     private void ReleaseMobileItem()

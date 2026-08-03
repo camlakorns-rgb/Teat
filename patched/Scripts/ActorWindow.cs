@@ -117,32 +117,26 @@ public partial class ActorWindow : Window
 		{
 			characterActor.characterInformation = characterData;
 		}
-		        characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
-        // V39 Deep Dive: Bit small + top - Qubit 128x128 scale 1.75 same as Byte (224px) -> tiny on 1080p
-        // Previous boost increased trueSize which moves ground up: ground = screenH - trueSize, larger trueSize = higher (floating top)
-        // Fix: keep trueSize original for ground, boost ONLY visual scale
+		                characterActor.trueSize = (Vector2I)(characterActor.characterInformation.characterSize * characterActor.characterInformation.characterScale * Main.Instance.settingSpriteScaler);
+        characterActor.SetupActor();
+        base.MinSize = characterActor.trueSize;
+        base.Size = base.MinSize;
+        // V43: Bit still small + floating - boost AFTER SetupActor so not overwritten
         if (Main._isMobile && characterActor.characterInformation != null)
         {
             string id = characterActor.characterInformation._itemID?.ToLower() ?? "";
             string name = characterActor.characterInformation.Name?.ToLower() ?? "";
-            GD.Print($"[BitDebug] Spawn ID={id} Name={name}");
-            if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan") || id.Contains("1_bit"))
+            GD.Print($"[BitDebug] Actor spawned ID={id} Name={name} Size={characterActor.trueSize}");
+            if (id.Contains("bit") || id.Contains("qubit") || id.Contains("trojan") || name.Contains("bit") || name.Contains("trojan"))
             {
-                float visualBoost = 5.0f; // V42 Bit still small + cuck anim small - 5.0x + log
+                float visualBoost = 5.5f;
                 if (characterActor.spriteParentController != null)
-                {
-                    characterActor.spriteParentController.Scale *= visualBoost;
-                }
+                    characterActor.spriteParentController.Scale = new Vector2(visualBoost, visualBoost);
                 if (characterActor.MainBody != null)
-                {
-                    characterActor.MainBody.Scale *= visualBoost;
-                }
-                GD.Print($"[BitDebug] Boosted {name} ID={id} to {visualBoost}x");
+                    characterActor.MainBody.Scale = new Vector2(visualBoost, visualBoost);
+                GD.Print($"[BitDebug] V43 Boosted to {visualBoost}x");
             }
         }
-		characterActor.SetupActor();
-		base.MinSize = characterActor.trueSize;
-		base.Size = base.MinSize;
 		if (overridePos == Vector2I.Zero)
 		{
 			int pos = ((GD.RandRange(0, 1) == 0) ? (Main.Instance.screenDataHandler.EffectiveLeftX - (int)spawnMargin.X) : (Main.Instance.screenDataHandler.EffectiveRightX + (int)spawnMargin.X));
@@ -150,7 +144,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.35f);
+				y = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.45f);
 			}
 			else
 			{
@@ -444,7 +438,7 @@ public partial class ActorWindow : Window
 			if (Main._isMobile)
 			{
 				Vector2I screenSize = DisplayServer.ScreenGetSize(Main.Instance.screenDataHandler.screenIndex);
-				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.35f); // V41 one block high -> push down more
+				groundY = screenSize.Y - characterActor.trueSize.Y + Mathf.RoundToInt(characterActor.trueSize.Y * 0.45f); // V43 still floating one block -> 45% down
 			}
 			else
 			{

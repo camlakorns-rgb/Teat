@@ -18,6 +18,7 @@ public partial class Main : Node2D
     public static readonly string V30_BUILD = "V30_BLACKSCREEN_ITEMSPAWN_FIX";
     public static readonly string V30_BUILD2 = "V30_MOBILE_RENDERER_VISIBLE_FALSE";
     public static readonly string V31_BUILD = "V31_ITEM_VISIBLE_FIX";
+    public static readonly string V32_BUILD = "V32_SCALE_FLOAT_FIX";
     public static readonly string V29_BUILD = "V29_ITEM_SPAWN_RENDERER_FIX_BUILD";
     public enum MobileTouchTargetKind { None, Byte, Item, Actor }
     public int _mobileTouchIndex = -1;
@@ -665,6 +666,28 @@ public partial class Main : Node2D
         mainWindow = GetWindow();
         if (!_isMobile) mainWindow.TransparentBg = true;
         saveHandler.AttemptLoad();
+        // V32: mobile scaling - Byte tiny on high DPI screens
+        if (_isMobile)
+        {
+            bool needSave = false;
+            if (settingSpriteScaler < 2.0f)
+            {
+                settingSpriteScaler = 2.5f;
+                needSave = true;
+            }
+            if (settingItemScaler < 1.5f)
+            {
+                settingItemScaler = 1.8f;
+                needSave = true;
+            }
+            if (settingUIScaler < 1.2f)
+            {
+                settingUIScaler = 1.3f;
+                needSave = true;
+            }
+            if (needSave)
+                saveHandler.SaveSettings();
+        }
         mainCharacter.trueSize = (Vector2I)(mainCharacter.characterInformation.characterSize * mainCharacter.characterInformation.characterScale * settingSpriteScaler);
         mainCharacter.SetupCharacter();
         screenDataHandler.UpdateScreenInfo(mainCharacter.trueSize);

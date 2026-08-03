@@ -25,6 +25,13 @@ public partial class Main : Node2D
     private Vector2I _prevTouchPos;
     private double _lastDragTime;
     private Vector2I _savedTouchPos;
+    // Item drag state
+    private ItemWindow _grabbedItem;
+    private Vector2I _itemGrabOffset;
+    private Vector2I _itemGrabStartPos;
+    private Vector2 _itemVelocity;
+    private Vector2I _itemPrevPos;
+    private double _itemLastDragTime;
     public Vector2I MobileMousePos()
     {
         if (_isMobile)
@@ -134,23 +141,50 @@ public partial class Main : Node2D
                     _mobileDragVelocity = Vector2.Zero;
                     _lastDragTime = _mobileTouchStartTime;
                     if (IsPointOnAnyItem(pos))
-                        _mobileTouchTarget = MobileTouchTargetKind.Item;
-                    else if (IsPointOnAnyActor(pos))
-                        _mobileTouchTarget = MobileTouchTargetKind.Actor;
-                    else if (GetThinnerCollisionBox().HasPoint(pos))
-                        _mobileTouchTarget = MobileTouchTargetKind.Byte;
-                    else
-                        _mobileTouchTarget = MobileTouchTargetKind.None;
-                    if (_mobileTouchTarget == MobileTouchTargetKind.Actor)
-                        Input.ActionPress("Pet");
-                    if (_mobileTouchTarget == MobileTouchTargetKind.Byte)
                     {
+                        _mobileTouchTarget = MobileTouchTargetKind.Item;
+                        // Find which item was touched and grab it
+                        _grabbedItem = FindItemAtPoint(pos);
+                        if (_grabbedItem != null && GodotObject.IsInstanceValid(_grabbedItem))
+                        {
+                            _itemGrabOffset = pos - _grabbedItem.Position;
+                            _itemGrabStartPos = _grabbedItem.Position;
+                            _itemPrevPos = _grabbedItem.Position;
+                            _itemVelocity = Vector2.Zero;
+                            _itemLastDragTime = _mobileTouchStartTime;
+                            SomethingHasBeenGrabbed = true;
+                            _grabbedItem.UpdateCombinationShaders(enable: true);
+                            // Pickup dialogue chance
+                            if (_grabbedItem.itemObject.itemInformation.possiblePickUpDialogue.Count() > 0 && mainCharacter.Visible && (float)GD.RandRange(0, 100) < _grabbedItem.itemObject.itemInformation.PerchentChanceOfDialogue)
+                            {
+                                DialogueDataRes d = PickDialogue(_grabbedItem.itemObject.itemInformation.possiblePickUpDialogue);
+                                if (d != null)
+                                {
+                                    dialogueStack.Add(d);
+                                    PopDialogueInStack(skipTimer: true);
+                                }
+                            }
+                        }
+                    }
+                    else if (IsPointOnAnyActor(pos))
+                    {
+                        _mobileTouchTarget = MobileTouchTargetKind.Actor;
+                        Input.ActionPress("Pet");
+                    }
+                    else if (GetThinnerCollisionBox().HasPoint(pos))
+                    {
+                        _mobileTouchTarget = MobileTouchTargetKind.Byte;
                         Input.ActionPress("Move");
                         Input.ActionPress("Pet");
+                    }
+                    else
+                    {
+                        _mobileTouchTarget = MobileTouchTargetKind.None;
                     }
                 }
                 else if (touch.Index == _mobileTouchIndex)
                 {
+                    // Touch released
                     double duration = Time.GetTicksMsec() / 1000.0 - _mobileTouchStartTime;
                     if (_mobileTouchTarget == MobileTouchTargetKind.Actor)
                         Input.ActionRelease("Pet");
@@ -159,6 +193,11 @@ public partial class Main : Node2D
                         Input.ActionRelease("Move");
                         Input.ActionRelease("Pet");
                     }
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Item && _grabbedItem != null && GodotObject.IsInstanceValid(_grabbedItem))
+                    {
+                        // Release item: check use/combine/throw
+                        ReleaseGrabbedItem(pos);
+                    }
                     if (_mobileTouchTarget == MobileTouchTargetKind.None && duration >= 0.5 && !_mobileTouchMoved)
                     {
                         Input.ActionPress("PauseGame");
@@ -166,6 +205,7 @@ public partial class Main : Node2D
                     }
                     _mobileTouchTarget = MobileTouchTargetKind.None;
                     _mobileTouchIndex = -1;
+                    _grabbedItem = null;
                 }
             }
             else if (@event is InputEventScreenDrag drag)
@@ -183,11 +223,107 @@ public partial class Main : Node2D
                     _lastDragTime = now;
                     if (_mobileTouchTarget == MobileTouchTargetKind.Byte && !Input.IsActionPressed("Move"))
                         Input.ActionPress("Move");
+                    // Drag item
+                    if (_mobileTouchTarget == MobileTouchTargetKind.Item && _grabbedItem != null && GodotObject.IsInstanceValid(_grabbedItem))
+                    {
+                        Vector2I newPos = pos - _itemGrabOffset;
+                        Vector2I screenSize = DisplayServer.ScreenGetSize();
+                        newPos.X = Mathf.Clamp(newPos.X, 0, Mathf.Max(0, screenSize.X - _grabbedItem.Size.X));
+                        newPos.Y = Mathf.Clamp(newPos.Y, 0, Mathf.Max(0, screenSize.Y - _grabbedItem.Size.Y));
+                        _grabbedItem.Position = newPos;
+                        // Track velocity for throw
+                        double itemDt = Math.Max(now - _itemLastDragTime, 0.001);
+                        _itemVelocity = (Vector2)(newPos - _itemPrevPos) / (float)itemDt;
+                        _itemPrevPos = newPos;
+                        _itemLastDragTime = now;
+                    }
                 }
             }
             return;
         }
         base._Input(@event);
+    }
+
+    private ItemWindow FindItemAtPoint(Vector2I pos)
+    {
+        for (int i = spawnedItems.Count - 1; i >= 0; i--)
+        {
+            ItemWindow w = spawnedItems[i];
+            if (GodotObject.IsInstanceValid(w) && w.Visible && new Rect2I(w.Position, w.Size).HasPoint(pos))
+                return w;
+        }
+        return null;
+    }
+
+    private void ReleaseGrabbedItem(Vector2I releasePos)
+    {
+        if (_grabbedItem == null || !GodotObject.IsInstanceValid(_grabbedItem))
+            return;
+        ItemWindow item = _grabbedItem;
+        item.UpdateCombinationShaders(enable: false);
+        SomethingHasBeenGrabbed = false;
+
+        // Throw check
+        if (settingWindowThrowPhysics && _itemVelocity.Length() > 260f)
+        {
+            Vector2 throwVel = _itemVelocity * mouseVelocityScaler;
+            throwVel.Y = Mathf.Clamp(throwVel.Y, -1600f, float.MaxValue);
+            item.itemWindowVelocity = throwVel;
+            item.isThrown = true;
+            _grabbedItem = null;
+            return;
+        }
+
+        // Check if dropped on Byte
+        Rect2I itemRect = new Rect2I(item.Position, item.Size);
+        if (mainCharacter.Visible && GetThinnerCollisionBox().Intersects(itemRect))
+        {
+            item.UseOnMainActor();
+            if (!item.itemObject.itemInformation.isReusable)
+            {
+                TweenGrabRelease();
+                spawnedItems.Remove(item);
+                item.CallDeferred("queue_free");
+            }
+            _grabbedItem = null;
+            return;
+        }
+
+        // Check if dropped on NPC
+        if (item.itemObject.itemInformation.possibleUsableAIs.Count() > 0)
+        {
+            foreach (ActorWindow actor in spawnedActors)
+            {
+                if (!GodotObject.IsInstanceValid(actor) || !actor.Visible)
+                    continue;
+                AiItemDataRes aiData = null;
+                foreach (AiItemDataRes usable in item.itemObject.itemInformation.possibleUsableAIs)
+                {
+                    if (usable.targetActorsID == actor.characterActor.characterInformation._itemID)
+                    {
+                        aiData = usable;
+                        break;
+                    }
+                }
+                if (aiData == null) continue;
+                if (new Rect2I(actor.Position, actor.Size).Intersects(itemRect))
+                {
+                    item.UseOnOtherActor(actor, aiData);
+                    if (!item.itemObject.itemInformation.isReusable)
+                    {
+                        TweenGrabRelease();
+                        spawnedItems.Remove(item);
+                        item.CallDeferred("queue_free");
+                    }
+                    _grabbedItem = null;
+                    return;
+                }
+            }
+        }
+
+        // Check combine with other items
+        item.CombineItem(itemRect);
+        _grabbedItem = null;
     }
 
     [Signal]

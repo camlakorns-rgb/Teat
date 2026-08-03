@@ -36,9 +36,9 @@ public partial class ItemWindow : Window
 
     private Array<ItemWindow> tiedShaderWindows = new Array<ItemWindow>();
 
-    private Vector2 itemWindowVelocity = Vector2.Zero;
+    public Vector2 itemWindowVelocity = Vector2.Zero;
 
-    private bool isThrown;
+    public bool isThrown;
 
     private const float itemWindowGravity = 1400f;
 
@@ -84,7 +84,7 @@ public partial class ItemWindow : Window
             base.MousePassthrough = true;
             return;
         }
-        base.MousePassthrough = Main.Instance.settingPassivePlayMode;
+        base.MousePassthrough = true; // Always pass-through on mobile; Main._Input handles item touch
         if (selected)
         {
             FollowMouse();
@@ -151,17 +151,6 @@ public partial class ItemWindow : Window
         base.Size = base.MinSize;
         base.ProcessMode = ProcessModeEnum.Inherit;
         isSetup = true;
-        // Add touch handler INSIDE the window so it receives touches in the window's viewport
-        if (Main._isMobile && GetNodeOrNull<ItemTouchArea>("ItemTouchArea") == null)
-        {
-            var touchArea = new ItemTouchArea();
-            touchArea.Name = "ItemTouchArea";
-            touchArea.Owner = this;
-            touchArea.SetAnchorsPreset(Control.LayoutPreset.FullRect);
-            touchArea.MouseFilter = Control.MouseFilterEnum.Stop;
-            touchArea.ProcessMode = ProcessModeEnum.Always;
-            AddChild(touchArea);
-        }
         if (!Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Contains(itemObject.itemInformation.itemID))
         {
             Main.Instance.SeenObjects[SaveHandler.SeenObjectTypes.ITEMS].Add(itemObject.itemInformation.itemID);
@@ -176,73 +165,14 @@ public partial class ItemWindow : Window
     private Vector2 _mobileVelocity;
     private double _mobileLastTime;
 
-    // Touch handler placed INSIDE the Window so it receives touches in the
-    // window's own viewport.  On Godot 4 a Window's _Input() only fires for
-    // events in the parent scene tree; touches that land inside the window
-    // go to the window's sub-viewport and must be handled by a child node.
-    public partial class ItemTouchArea : Control
-    {
-        public new ItemWindow Owner;
-        public override void _Input(InputEvent @event)
-        {
-            if (Owner == null || !Main._isMobile || !Owner.isSetup || Owner.CurrentlyPickedUp)
-                return;
-            if (@event is InputEventScreenTouch touch)
-            {
-                if (touch.Pressed)
-                {
-                    if (Main.Instance.SomethingHasBeenGrabbed)
-                        return;
-                    Owner._mobileHeld = true;
-                    Main.Instance.SomethingHasBeenGrabbed = true;
-                    Main.Instance.mainWindow.AlwaysOnTop = false;
-                    // touch.Position is in window-local coords; convert to screen coords
-                    Vector2I screenPos = (Vector2I)touch.Position + Owner.base_Position();
-                    Owner._mobileGrabLocal = screenPos;
-                    Owner._mobileGrabWindowPos = Owner.Position;
-                    Owner._mobileLastLocal = screenPos;
-                    Owner._mobileVelocity = Vector2.Zero;
-                    Owner._mobileLastTime = Time.GetTicksMsec() / 1000.0;
-                    Owner.UpdateCombinationShaders(enable: true);
-                    if (Owner.itemObject.itemInformation.possiblePickUpDialogue.Count() > 0 && Main.Instance.mainCharacter.Visible && (float)GD.RandRange(0, 100) < Owner.itemObject.itemInformation.PerchentChanceOfDialogue)
-                    {
-                        DialogueDataRes d = Main.Instance.PickDialogue(Owner.itemObject.itemInformation.possiblePickUpDialogue);
-                        if (d != null)
-                        {
-                            Main.Instance.dialogueStack.Add(d);
-                            Main.Instance.PopDialogueInStack(skipTimer: true);
-                        }
-                    }
-                    GetViewport().SetInputAsHandled();
-                }
-                else if (Owner._mobileHeld)
-                {
-                    Owner.ReleaseMobileItemPublic();
-                    GetViewport().SetInputAsHandled();
-                }
-            }
-            else if (@event is InputEventScreenDrag drag && Owner._mobileHeld)
-            {
-                Vector2I screenPos = (Vector2I)drag.Position + Owner.base_Position();
-                double now = Time.GetTicksMsec() / 1000.0;
-                double dt = Mathf.Max((float)(now - Owner._mobileLastTime), 0.001f);
-                Owner._mobileVelocity = ((Vector2)(screenPos - Owner._mobileLastLocal)) / (float)dt;
-                Owner._mobileLastLocal = screenPos;
-                Owner._mobileLastTime = now;
-                Owner.ApplyMobilePosition();
-                GetViewport().SetInputAsHandled();
-            }
-        }
-    }
-
     public Vector2I base_Position() { return base.Position; }
     public void ReleaseMobileItemPublic() { ReleaseMobileItem(); }
 
     public override void _Input(InputEvent @event)
     {
-        // This _Input only fires for touches OUTSIDE all windows (parent viewport).
-        // On mobile we rely on ItemTouchArea inside the window for actual item touches.
-        // Keep this as fallback for edge cases (e.g., touch starts outside then drags in).
+        // On mobile, item touch is handled entirely by Main._Input because this Window
+        // has MousePassthrough=true so touches pass through to the main viewport.
+        // This _Input is kept for desktop compatibility.
         base._Input(@event);
     }
 
@@ -464,7 +394,7 @@ public partial class ItemWindow : Window
         Main.Instance.mainWindow.AlwaysOnTop = true;
     }
 
-    private void UpdateCombinationShaders(bool enable)
+    public void UpdateCombinationShaders(bool enable)
     {
         if (!enable)
         {
@@ -516,7 +446,7 @@ public partial class ItemWindow : Window
         }
     }
 
-    private void CombineItem(Rect2I thisRect)
+    public void CombineItem(Rect2I thisRect)
     {
         foreach (ItemWindow spawnedItem in Main.Instance.spawnedItems)
         {
@@ -579,7 +509,7 @@ public partial class ItemWindow : Window
         }
     }
 
-    private void UseOnMainActor()
+    public void UseOnMainActor()
     {
         GD.Print("Using Item: " + itemObject.itemInformation.itemID);
         Main.Instance.ClearAllAttachments();
@@ -787,7 +717,7 @@ public partial class ItemWindow : Window
         }
     }
 
-    private void UseOnOtherActor(ActorWindow target, AiItemDataRes aiData)
+    public void UseOnOtherActor(ActorWindow target, AiItemDataRes aiData)
     {
         GD.Print("Using Item on Actor AS Sub Actor: " + itemObject.itemInformation.itemID);
         foreach (ItemDataRes.ItemTask itemTask in aiData.itemTasks)

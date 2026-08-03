@@ -1244,7 +1244,9 @@ public partial class Main : Node2D
     {
         if (settingSpawnItems)
         {
-            spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X, spawnerTimeRange.Y);
+            // Spawn 2x faster on mobile
+            float speedMultiplier = _isMobile ? 0.5f : 1f;
+            spawnerTimer.WaitTime = GD.RandRange(spawnerTimeRange.X * speedMultiplier, spawnerTimeRange.Y * speedMultiplier);
             spawnerTimer.Start();
             if (spawnedItems.Count >= maxItems)
             {
@@ -1266,41 +1268,46 @@ public partial class Main : Node2D
                     weightGroup.Add(item2, itemDataRes.itemSpawnWeight);
                 }
             }
-            string item = weightGroup.GetItem(GD.RandRange(0, 10000));
-            ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
-            itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
-            AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
-            if (x == -1 && y == -1)
+            // Spawn 2 items at once on mobile
+            int itemsToSpawn = _isMobile ? 2 : 1;
+            for (int spawnCount = 0; spawnCount < itemsToSpawn && spawnedItems.Count < maxItems; spawnCount++)
             {
-                int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
-                if (Main._isMobile)
+                string item = weightGroup.GetItem(GD.RandRange(0, 10000));
+                ItemWindow itemWindow = ItemObjectScene.Instantiate<ItemWindow>(PackedScene.GenEditState.Disabled);
+                itemWindow.SetupItemWindow((ItemDataRes)ResourceCache.resourcesLoaded[ResourceCache.ResourceTyping.ITEM][item]);
+                AddChild(itemWindow, forceReadableName: false, InternalMode.Disabled);
+                if (x == -1 && y == -1)
                 {
-                    Vector2I sz = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
-                    num = Mathf.Clamp(num, 0, Mathf.Max(0, sz.X - itemWindow.Size.X));
-                    int yTop = Mathf.Max(DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y, 0);
-                    itemWindow.Position = new Vector2I(num, yTop);
+                    int num = (int)GD.RandRange((float)screenDataHandler.EffectiveLeftX + spawnMargin.X, (float)screenDataHandler.EffectiveRightX - spawnMargin.X);
+                    if (Main._isMobile)
+                    {
+                        Vector2I sz = DisplayServer.ScreenGetSize(screenDataHandler.screenIndex);
+                        num = Mathf.Clamp(num, 0, Mathf.Max(0, sz.X - itemWindow.Size.X));
+                        int yTop = Mathf.Max(DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y, 0);
+                        itemWindow.Position = new Vector2I(num, yTop);
+                    }
+                    else
+                    {
+                        int screenCount = DisplayServer.GetScreenCount();
+                        int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
+                        for (int i = 0; i < screenCount; i++)
+                        {
+                            Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
+                            if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
+                            {
+                                y2 = rect2I.Position.Y;
+                                break;
+                            }
+                        }
+                        itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
+                    }
                 }
                 else
                 {
-                    int screenCount = DisplayServer.GetScreenCount();
-                    int y2 = DisplayServer.ScreenGetUsableRect(screenDataHandler.screenIndex).Position.Y;
-                    for (int i = 0; i < screenCount; i++)
-                    {
-                        Rect2I rect2I = DisplayServer.ScreenGetUsableRect(i);
-                        if (num >= rect2I.Position.X && num < rect2I.Position.X + rect2I.Size.X)
-                        {
-                            y2 = rect2I.Position.Y;
-                            break;
-                        }
-                    }
-                    itemWindow.Position = new Vector2I(num, y2 - Mathf.RoundToInt(spawnMargin.Y));
+                    itemWindow.Position = new Vector2I(x, y);
                 }
+                spawnedItems.Add(itemWindow);
             }
-            else
-            {
-                itemWindow.Position = new Vector2I(x, y);
-            }
-            spawnedItems.Add(itemWindow);
         }
         else
         {

@@ -348,6 +348,11 @@ public partial class TerminalHandler : Control
         string text2 = text.Trim();
         _inputTrap.Clear();
         RebuildInputLine();
+        // Re-grab focus after submit so keyboard stays open on mobile
+        if (Main._isMobile)
+        {
+            Callable.From(() => _inputTrap.GrabFocus()).CallDeferred();
+        }
         if (text2.Length == 0)
         {
             CommitLine(Prefix);

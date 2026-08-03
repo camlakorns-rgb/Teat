@@ -219,7 +219,8 @@ public partial class AttachObjWindow : Window
                     _forcedMoveStateTimer = 0.0;
                     _forcedMovementElapsed = 0.0;
                     _forcedMovementDuration = attachObject.attachedItemInformation.movementDuration;
-                    _forcedMovementX = parentWindow.Position.X;
+                    // On mobile, use Main.Instance.Position instead of parentWindow.Position
+                    _forcedMovementX = (Main._isMobile && parentWindow == Main.Instance.mainWindow) ? Main.Instance.Position.X : parentWindow.Position.X;
                     if (parentWindow == Main.Instance.mainWindow)
                     {
                         Main.Instance.ClearItemTarget(usingItem: true);
@@ -464,7 +465,15 @@ public partial class AttachObjWindow : Window
                     attachObject.FlipHorizontal(_forcedMoveDirection < 0f);
                     _forcedMovementX = num2;
                 }
-                parentWindow.Position = new Vector2I(num2, parentWindow.Position.Y);
+                // On mobile, update Main.Instance.Position instead of parentWindow.Position
+                if (Main._isMobile && parentWindow == Main.Instance.mainWindow)
+                {
+                    Main.Instance.Position = new Vector2(num2, Main.Instance.Position.Y);
+                }
+                else
+                {
+                    parentWindow.Position = new Vector2I(num2, parentWindow.Position.Y);
+                }
             }
         }
     }
